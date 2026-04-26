@@ -2260,11 +2260,26 @@ function App() {
   const [stack, setStack] = _useState([{ screen: 'home', params: {} }]);
   const [tab, setTab] = _useState('home');
 
-  const [sessions, setSessions] = _useState(window.SEED_SESSIONS);
-  const [feedback, setFeedback] = _useState(window.SEED_FEEDBACK);
-  const [studios, setStudios] = _useState(window.SEED_STUDIOS);
-  const [teachers, setTeachers] = _useState(window.SEED_TEACHERS);
-  const [levels, setLevels] = _useState(window.SEED_LEVELS);
+  const [sessions, setSessions] = _useState(() => {
+    try { const s = localStorage.getItem('app-sessions'); if (s) return JSON.parse(s); } catch(e) {}
+    return window.SEED_SESSIONS;
+  });
+  const [feedback, setFeedback] = _useState(() => {
+    try { const s = localStorage.getItem('app-feedback'); if (s) return JSON.parse(s); } catch(e) {}
+    return window.SEED_FEEDBACK;
+  });
+  const [studios, setStudios] = _useState(() => {
+    try { const s = localStorage.getItem('app-studios'); if (s) return JSON.parse(s); } catch(e) {}
+    return window.SEED_STUDIOS;
+  });
+  const [teachers, setTeachers] = _useState(() => {
+    try { const s = localStorage.getItem('app-teachers'); if (s) return JSON.parse(s); } catch(e) {}
+    return window.SEED_TEACHERS;
+  });
+  const [levels, setLevels] = _useState(() => {
+    try { const s = localStorage.getItem('app-levels'); if (s) return JSON.parse(s); } catch(e) {}
+    return window.SEED_LEVELS;
+  });
 
   const store = {
     sessions, feedback, studios, teachers, levels,
@@ -2344,6 +2359,12 @@ function App() {
       localStorage.setItem('dev-tab', tab);
     } catch(e){}
   }, [stack, tab]);
+
+  _useEffect(() => { try { localStorage.setItem('app-sessions', JSON.stringify(sessions)); } catch(e){} }, [sessions]);
+  _useEffect(() => { try { localStorage.setItem('app-feedback', JSON.stringify(feedback)); } catch(e){} }, [feedback]);
+  _useEffect(() => { try { localStorage.setItem('app-studios', JSON.stringify(studios)); } catch(e){} }, [studios]);
+  _useEffect(() => { try { localStorage.setItem('app-teachers', JSON.stringify(teachers)); } catch(e){} }, [teachers]);
+  _useEffect(() => { try { localStorage.setItem('app-levels', JSON.stringify(levels)); } catch(e){} }, [levels]);
 
   const top = stack[stack.length - 1];
   const isModal = ['class-new', 'feedback-new'].includes(top.screen);
