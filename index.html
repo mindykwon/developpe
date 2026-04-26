@@ -2232,10 +2232,10 @@ function StudioManagerScreen({ store, nav }) {
                     </div>
                   </div>
                 ) : (
-                  <div style={{ padding: '14px 14px', display: 'flex', alignItems: 'center', gap: 10, borderBottom: `0.5px solid ${t.colors.border}` }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 15, fontWeight: 600, color: t.colors.textPrimary }}>{s.name}</div>
-                      {s.memo && <div style={{ fontSize: 12, color: t.colors.textMuted, marginTop: 2 }}>{s.memo}</div>}
+                  <div style={{ minHeight: 44, padding: '0 14px', display: 'flex', alignItems: 'center', gap: 10, borderBottom: `0.5px solid ${t.colors.border}` }}>
+                    <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 15, fontWeight: 600, color: t.colors.textPrimary }}>{s.name}</span>
+                      {s.memo && <span style={{ fontSize: 12, color: t.colors.textMuted }}>{s.memo}</span>}
                     </div>
                     {isDeletingStudio ? (
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -2253,7 +2253,7 @@ function StudioManagerScreen({ store, nav }) {
                 {!isEditingStudio && (
                   <>
                     {/* 선생님 섹션 */}
-                    <div style={{ padding: '6px 14px', borderBottom: `0.5px solid ${t.colors.border}`, background: t.colors.surface }}>
+                    <div style={{ minHeight: 44, padding: '0 14px', borderBottom: `0.5px solid ${t.colors.border}`, background: t.colors.surface, display: 'flex', alignItems: 'center' }}>
                       <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase', color: t.colors.textMuted }}>선생님</span>
                     </div>
                     {studioTeachers.map((tc) => {
@@ -2270,7 +2270,7 @@ function StudioManagerScreen({ store, nav }) {
                               </div>
                             </div>
                           ) : (
-                            <div style={{ padding: '10px 14px 10px 28px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ minHeight: 44, padding: '0 14px 0 28px', display: 'flex', alignItems: 'center', gap: 8 }}>
                               <div style={{ width: 4, height: 4, borderRadius: 2, background: t.colors.textMuted, flexShrink: 0 }} />
                               <span style={{ flex: 1, fontSize: 14, color: t.colors.textSecondary }}>{tc.name}</span>
                               {isDeletingTeacher ? (
@@ -2299,14 +2299,14 @@ function StudioManagerScreen({ store, nav }) {
                       </div>
                     )}
                     {!isAddingTeacher && (
-                      <div style={{ borderBottom: `0.5px solid ${t.colors.border}`, padding: '8px 14px 8px 28px' }}>
+                      <div style={{ borderBottom: `0.5px solid ${t.colors.border}`, minHeight: 44, padding: '0 14px 0 28px', display: 'flex', alignItems: 'center' }}>
                         <button onClick={() => startNewTeacher(s.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: t.colors.primaryDeep, fontFamily: t.font.sans, fontSize: 13, padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
                           <Icon name="plus" size={13} color={t.colors.primaryDeep} /> 선생님 추가
                         </button>
                       </div>
                     )}
                     {/* 레벨 섹션 */}
-                    <div style={{ padding: '6px 14px', borderBottom: `0.5px solid ${t.colors.border}`, background: t.colors.surface }}>
+                    <div style={{ minHeight: 44, padding: '0 14px', borderBottom: `0.5px solid ${t.colors.border}`, background: t.colors.surface, display: 'flex', alignItems: 'center' }}>
                       <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase', color: t.colors.textMuted }}>레벨</span>
                     </div>
                     {studioLevels.map((l) => {
@@ -2324,7 +2324,7 @@ function StudioManagerScreen({ store, nav }) {
                               </div>
                             </div>
                           ) : (
-                            <div style={{ padding: '10px 14px 10px 28px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ minHeight: 44, padding: '0 14px 0 28px', display: 'flex', alignItems: 'center', gap: 8 }}>
                               <div style={{ width: 4, height: 4, borderRadius: 2, background: t.colors.textMuted, flexShrink: 0 }} />
                               <span style={{ flex: 1, fontSize: 14, color: t.colors.textSecondary }}>{l.name}</span>
                               {isDeletingLevel ? (
@@ -2354,7 +2354,7 @@ function StudioManagerScreen({ store, nav }) {
                       </div>
                     )}
                     {!isAddingLevel && (
-                      <div style={{ padding: '8px 14px 8px 28px' }}>
+                      <div style={{ minHeight: 44, padding: '0 14px 0 28px', display: 'flex', alignItems: 'center' }}>
                         <button onClick={() => startNewLevel(s.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: t.colors.primaryDeep, fontFamily: t.font.sans, fontSize: 13, padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
                           <Icon name="plus" size={13} color={t.colors.primaryDeep} /> 레벨 추가
                         </button>
