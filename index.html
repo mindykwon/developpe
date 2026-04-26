@@ -1,0 +1,2151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Développé</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Développé">
+<meta name="theme-color" content="#FDF6F3">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #E8DAD5; min-height: 100vh; font-family: "Pretendard", -apple-system, system-ui, sans-serif; overscroll-behavior: none; }
+  * { box-sizing: border-box; }
+  button { font-family: inherit; -webkit-tap-highlight-color: transparent; }
+  button:active { opacity: 0.85; }
+  input, textarea { font-family: inherit; }
+  input::placeholder, textarea::placeholder { color: #A88B95; }
+  ::-webkit-scrollbar { display: none; }
+  * { scrollbar-width: none; }
+  .stage {
+    min-height: 100vh; width: 100vw;
+    display: flex; align-items: center; justify-content: center;
+    padding: 28px; position: relative;
+    background:
+      radial-gradient(ellipse at 20% 10%, rgba(232,180,184,0.35), transparent 55%),
+      radial-gradient(ellipse at 85% 90%, rgba(139,74,95,0.12), transparent 60%),
+      #E8DAD5;
+  }
+  .brand-watermark {
+    position: fixed; top: 28px; left: 36px;
+    font-family: "Playfair Display", serif; font-style: italic;
+    font-size: 26px; font-weight: 500; color: rgba(43,31,38,0.32);
+    letter-spacing: -0.3px; pointer-events: none;
+  }
+  .brand-sub {
+    position: fixed; bottom: 28px; left: 36px;
+    font-size: 11px; color: rgba(43,31,38,0.4);
+    letter-spacing: 1.5px; text-transform: uppercase;
+    pointer-events: none;
+  }
+  /* ── 모바일: 전체화면 앱 ── */
+  @media (max-width: 500px) {
+    html, body { height: 100%; overflow: hidden; background: #FDF6F3; }
+    #root { height: 100%; }
+    .stage {
+      padding: 0; min-height: 100dvh; height: 100dvh;
+      display: block; background: #FDF6F3;
+    }
+    .brand-watermark, .brand-sub, #tweaks { display: none !important; }
+  }
+  .tweaks {
+    position: fixed; right: 24px; top: 24px;
+    width: 260px; z-index: 200;
+    background: rgba(253,246,243,0.95);
+    backdrop-filter: blur(16px);
+    border: 0.5px solid rgba(43,31,38,0.12);
+    border-radius: 14px; padding: 14px;
+    box-shadow: 0 12px 36px rgba(43,31,38,0.15);
+    font-family: "Pretendard", sans-serif; font-size: 12px;
+    color: #2B1F26; display: none;
+  }
+  .tweaks.open { display: block; }
+  .tweaks h4 { margin: 0 0 10px; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #8B4A5F; }
+  .tweaks .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; }
+  .tweaks .row label { flex: 1; }
+  .tweaks select, .tweaks button { font-size: 12px; padding: 5px 8px; border-radius: 6px; border: 0.5px solid rgba(43,31,38,0.2); background: #fff; color: #2B1F26; cursor: pointer; }
+  .tweaks .seg { display: flex; gap: 2px; background: #F7E4E1; padding: 2px; border-radius: 6px; }
+  .tweaks .seg button { border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; background: transparent; }
+  .tweaks .seg button.on { background: #fff; color: #8B4A5F; font-weight: 600; }
+  .screen-jump { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 8px; }
+  .screen-jump button { padding: 6px 4px; font-size: 11px; text-align: left; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div class="brand-watermark">Développé · iOS</div>
+<div class="brand-sub">v1 · Mobile Prototype</div>
+<div class="tweaks" id="tweaks">
+  <h4>Tweaks</h4>
+  <div class="row"><label>Theme</label>
+    <div class="seg">
+      <button data-theme="light" class="on">Light</button>
+      <button data-theme="dark">Dark</button>
+    </div>
+  </div>
+  <div class="row"><label>Accent</label>
+    <select id="accentSel">
+      <option value="plum">Plum (default)</option>
+      <option value="sage">Sage</option>
+      <option value="ink">Ink</option>
+    </select>
+  </div>
+  <div class="row"><label>Title font</label>
+    <select id="fontSel">
+      <option value="playfair">Playfair</option>
+      <option value="serif-kr">Noto Serif KR</option>
+    </select>
+  </div>
+  <h4 style="margin-top:14px">Jump to screen</h4>
+  <div class="screen-jump" id="jumpGrid"></div>
+</div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- ─── theme.jsx ─────────────────────────────────────────────── -->
+<script type="text/babel">
+const theme = {
+  colors: {
+    primary:       '#E8B4B8',
+    primaryDeep:   '#8B4A5F',
+    background:    '#FDF6F3',
+    surface:       '#F7E4E1',
+    surfaceAlt:    '#FFFFFF',
+    textPrimary:   '#2B1F26',
+    textSecondary: '#7A5864',
+    textMuted:     '#A88B95',
+    border:        '#E8D4D0',
+    success:       '#7A9B7E',
+    danger:        '#B86B73',
+  },
+  font: {
+    serif: '"Playfair Display", "Noto Serif KR", Georgia, serif',
+    sans:  '"Pretendard", -apple-system, "SF Pro Text", system-ui, sans-serif',
+  },
+  radius: { card: 16, button: 12, pill: 999 },
+  space:  { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, screen: 20 },
+};
+
+const MOVEMENTS = {
+  barre: [
+    { key: 'plies',                   en: 'Pliés',                   ko: '플리에' },
+    { key: 'tendus',                  en: 'Battement Tendu',         ko: '탕뒤' },
+    { key: 'degages',                 en: 'Battement Dégagé',        ko: '데가제' },
+    { key: 'ronds-de-jambe-a-terre',  en: 'Ronds de Jambe à Terre',  ko: '롱 드 장브 아 떼르' },
+    { key: 'frappes',                 en: 'Battement Frappé',        ko: '프라페' },
+    { key: 'fondus',                  en: 'Battement Fondu',         ko: '퐁뒤' },
+    { key: 'ronds-de-jambe-en-lair',  en: "Ronds de Jambe en l'Air", ko: '롱 드 장브 앙 레르' },
+    { key: 'adagio-barre',            en: 'Adagio (Barre)',          ko: '아다지오 (바)' },
+    { key: 'grand-battements',        en: 'Grand Battements',        ko: '그랑 바트망' },
+  ],
+  center: [
+    { key: 'tendus-center',           en: 'Tendus',                  ko: '탕뒤' },
+    { key: 'adagio-center',           en: 'Adagio',                  ko: '아다지오' },
+    { key: 'pirouette',               en: 'Pirouette',               ko: '피루엣' },
+    { key: 'port-de-bras',            en: 'Port de Bras',            ko: '포르 드 브라' },
+    { key: 'reverence',               en: 'Révérence',               ko: '레베랑스' },
+  ],
+  misc: [
+    { key: 'warmup',                  en: 'Warm-up',                 ko: '웜업' },
+    { key: 'posture',                 en: 'Posture · Alignment',     ko: '자세·정렬' },
+    { key: 'turnout',                 en: 'Turnout',                 ko: '턴아웃' },
+    { key: 'breathing',               en: 'Breathing',               ko: '호흡' },
+    { key: 'musicality',              en: 'Musicality',              ko: '뮤지컬리티' },
+    { key: 'mindset',                 en: 'Mindset',                 ko: '마인드셋' },
+    { key: 'general',                 en: 'General Note',            ko: '기타 메모' },
+  ],
+};
+
+const SEED_STUDIOS = [
+  { id: 1, name: '프레시 발레 스튜디오', memo: '강남' },
+  { id: 2, name: 'Studio Ligne Claire', memo: '한남동' },
+  { id: 3, name: '발레에뚜왈', memo: '' },
+];
+const SEED_TEACHERS = [
+  { id: 1, name: '김지현', studioId: 1 },
+  { id: 2, name: 'Marion L.', studioId: 2 },
+  { id: 3, name: '박소연', studioId: 1 },
+  { id: 4, name: '이태림', studioId: 3 },
+];
+const SEED_LEVELS = [
+  { id: 1, name: 'Beginner',     order: 1 },
+  { id: 2, name: 'Intermediate', order: 2 },
+  { id: 3, name: 'Advanced',     order: 3 },
+  { id: 4, name: 'Pro',          order: 4 },
+];
+
+const SEED_SESSIONS = [
+  {
+    id: 1, date: '2026-04-18', studioId: 2, teacherId: 2, levelId: 2,
+    notes: {
+      plies: [
+        '호흡 깊게, 내려갈 때 꼬리뼈 말리지 않게.',
+        '무릎이 두 번째 발가락 방향으로 빠지도록.',
+        '그랑 플리에에서 어깨가 올라오는 버릇.',
+      ],
+      tendus: [
+        '5번 포지션 시작/끝 명확히.',
+        '앞으로 낼 때 고관절 열림 유지.',
+        '돌아올 때 복부 쓰기.',
+      ],
+      pirouette: [
+        '프렙에서 뒷다리 턴아웃 풀지 말 것.',
+        '스팟 고정 후 머리만 돌리기.',
+      ],
+      'port-de-bras': [
+        '손목 꺾지 말고 손끝까지 긴 라인.',
+        '시선은 손 따라가되 목 짧아지지 않게.',
+      ],
+      'adagio-center': [
+        '데블로페 펼 때 지지다리 고관절 안 빠지게.',
+      ],
+    },
+  },
+  {
+    id: 2, date: '2026-04-16', studioId: 1, teacherId: 1, levelId: 2,
+    notes: {
+      pirouette: [
+        '스팟팅 확실히 개선됨. 다음엔 더블에 도전.',
+        '리테이어 포지션 낮음. 무릎을 더 높이.',
+      ],
+      'adagio-center': [
+        '데블로페 펼 때 지지 다리 고관절 안 빠지게.',
+      ],
+    },
+  },
+  {
+    id: 3, date: '2026-04-14', studioId: 1, teacherId: 3, levelId: 2,
+    notes: {
+      'grand-battements': [
+        '올라갈 때보단 내려올 때 컨트롤.',
+        '발뒤꿈치 바닥에 내려놓기.',
+      ],
+      frappes: [
+        '드미 포지션에서 발목이 돌아감. 턴아웃을 허벅지부터.',
+      ],
+    },
+  },
+  {
+    id: 4, date: '2026-04-11', studioId: 2, teacherId: 2, levelId: 2,
+    notes: {
+      tendus: [
+        '다섯번째 포지션 정확히 닫기. 뒷발 뒤꿈치가 앞발 엄지 앞으로.',
+        '반복 연습. 발끝까지 의식.',
+      ],
+      fondus: [
+        '한 다리 플리에에서 골반 수평 유지.',
+      ],
+      'ronds-de-jambe-a-terre': [
+        '원이 작아짐. 드방/데리에르 끝까지.',
+      ],
+      'grand-battements': [
+        '골반 안정성 확보 후에 높이 늘리기.',
+      ],
+    },
+  },
+  {
+    id: 5, date: '2026-04-09', studioId: 3, teacherId: 4, levelId: 1,
+    notes: {
+      plies: [
+        '낯선 스튜디오, 선생님 스타일 적응 중.',
+        '드미 플리에에서 이미 힐 뜸. 발목 유연성 스트레칭 필요.',
+      ],
+      tendus: [
+        '뒤로 낼 때 엉덩이 뒤로 빠짐.',
+      ],
+    },
+  },
+  {
+    id: 6, date: '2026-04-06', studioId: 1, teacherId: 1, levelId: 2,
+    notes: {
+      tendus: [
+        '박자 안에 끝까지 쓰기. 빠른 탕뒤에서 성급해짐.',
+      ],
+      pirouette: [
+        '프렙 너무 낮음. 더 위로 올라오며 시작.',
+      ],
+      reverence: [
+        '마지막 호흡까지 라인 유지.',
+      ],
+    },
+  },
+];
+
+const SEED_FEEDBACK = [];
+
+Object.assign(window, {
+  theme, MOVEMENTS,
+  SEED_STUDIOS, SEED_TEACHERS, SEED_LEVELS,
+  SEED_SESSIONS, SEED_FEEDBACK,
+});
+</script>
+
+<!-- ─── components.jsx ───────────────────────────────────────── -->
+<script type="text/babel">
+function Icon({ name, size = 20, color = 'currentColor', style = {} }) {
+  const s = size;
+  const stroke = { stroke: color, strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round', fill: 'none' };
+  const P = (d) => <path d={d} {...stroke} />;
+  const paths = {
+    plus:    <>{P('M12 5v14M5 12h14')}</>,
+    back:    <>{P('M15 5l-7 7 7 7')}</>,
+    close:   <>{P('M6 6l12 12M18 6L6 18')}</>,
+    check:   <>{P('M5 12l5 5L20 7')}</>,
+    chevron: <>{P('M9 5l7 7-7 7')}</>,
+    chevronDown: <>{P('M5 9l7 7 7-7')}</>,
+    edit:    <>{P('M4 20h4L19 9l-4-4L4 16v4z')}{P('M13 7l4 4')}</>,
+    trash:   <>{P('M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13')}</>,
+    dot:     <circle cx="12" cy="12" r="2" fill={color} />,
+    calendar:<>{P('M4 7h16v13H4zM4 7V5a1 1 0 011-1h14a1 1 0 011 1v2M8 3v3M16 3v3')}</>,
+    studio:  <>{P('M4 11l8-6 8 6v9H4z')}{P('M10 20v-5h4v5')}</>,
+    teacher: <>{P('M12 12a4 4 0 100-8 4 4 0 000 8z')}{P('M4 20c0-4 4-6 8-6s8 2 8 6')}</>,
+    level:   <>{P('M4 20h16M4 16h10M4 12h6M4 8h3')}</>,
+    home:    <>{P('M4 11l8-7 8 7v9H4z')}</>,
+    book:    <>{P('M4 5h7a3 3 0 013 3v12a2 2 0 00-2-2H4zM20 5h-7a3 3 0 00-3 3v12a2 2 0 012-2h8z')}</>,
+    gear:    <>{P('M12 15a3 3 0 100-6 3 3 0 000 6z')}{P('M19 12a7 7 0 00-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 00-2-1.2L14 3h-4l-.6 2.6a7 7 0 00-2 1.2l-2.3-.9-2 3.4 2 1.5a7 7 0 000 2.4l-2 1.5 2 3.4 2.3-.9a7 7 0 002 1.2L10 21h4l.6-2.6a7 7 0 002-1.2l2.3.9 2-3.4-2-1.5c.07-.4.1-.8.1-1.2z')}</>,
+    search:  <>{P('M11 11m-7 0a7 7 0 1014 0 7 7 0 10-14 0')}{P('M16 16l5 5')}</>,
+    note:    <>{P('M5 4h10l4 4v12H5z')}{P('M15 4v4h4M8 13h8M8 17h5')}</>,
+    movement:<>{P('M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6')}</>,
+    history: <>{P('M3 12a9 9 0 109-9')}{P('M3 12V6M3 12h6M12 7v5l3 2')}</>,
+    tag:     <>{P('M4 12V4h8l8 8-8 8z')}<circle cx="8" cy="8" r="1" fill={color} /></>,
+    drag:    <>{P('M8 6h.01M16 6h.01M8 12h.01M16 12h.01M8 18h.01M16 18h.01')}</>,
+    ellipsis:<><circle cx="5" cy="12" r="1.4" fill={color} /><circle cx="12" cy="12" r="1.4" fill={color} /><circle cx="19" cy="12" r="1.4" fill={color} /></>,
+    bar:     <>{P('M3 6h18M3 6v12M21 6v12')}</>,
+    arrowUp: <>{P('M12 5v14M5 12l7-7 7 7')}</>,
+  };
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" style={{ display: 'block', ...style }}>
+      {paths[name] || null}
+    </svg>
+  );
+}
+
+function Button({ children, onClick, variant = 'primary', full, icon, style = {} }) {
+  const t = window.theme;
+  const styles = {
+    primary:   { bg: t.colors.primaryDeep, fg: '#FFFFFF' },
+    secondary: { bg: t.colors.surface, fg: t.colors.primaryDeep },
+    ghost:     { bg: 'transparent', fg: t.colors.primaryDeep },
+  }[variant];
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        gap: 6, width: full ? '100%' : undefined,
+        padding: '13px 18px', borderRadius: t.radius.button,
+        background: styles.bg, color: styles.fg,
+        border: 'none', cursor: 'pointer',
+        fontFamily: t.font.sans, fontSize: 15, fontWeight: 600,
+        letterSpacing: -0.2,
+        ...style,
+      }}
+    >
+      {icon && <Icon name={icon} size={18} color={styles.fg} />}
+      {children}
+    </button>
+  );
+}
+
+const IS_MOBILE = typeof window !== 'undefined' && window.matchMedia('(max-width: 500px)').matches;
+
+function PhoneShell({ children, dark = false }) {
+  const bg = dark ? '#1A1317' : window.theme.colors.background;
+
+  // 모바일: 프레임 없이 전체화면
+  if (IS_MOBILE) {
+    return (
+      <div style={{
+        width: '100%', height: '100dvh',
+        display: 'flex', flexDirection: 'column',
+        background: bg,
+        fontFamily: window.theme.font.sans,
+        color: window.theme.colors.textPrimary,
+        WebkitFontSmoothing: 'antialiased',
+        paddingTop: 'env(safe-area-inset-top)',
+        overflow: 'hidden',
+      }}>
+        {children}
+      </div>
+    );
+  }
+
+  // 데스크탑: 기존 폰 프레임
+  return (
+    <div style={{
+      width: 390, height: 844,
+      borderRadius: 54, overflow: 'hidden', position: 'relative',
+      background: bg,
+      boxShadow:
+        '0 0 0 2px #1a1010, 0 0 0 14px #2a1f24, 0 40px 80px rgba(40,20,28,0.25), 0 0 0 15px rgba(255,255,255,0.06)',
+      fontFamily: window.theme.font.sans,
+      color: window.theme.colors.textPrimary,
+      WebkitFontSmoothing: 'antialiased',
+    }}>
+      <div style={{
+        position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
+        width: 120, height: 35, borderRadius: 22, background: '#000', zIndex: 60,
+      }} />
+      <StatusBar dark={dark} />
+      <div style={{
+        position: 'absolute', inset: 0, paddingTop: 54,
+        display: 'flex', flexDirection: 'column',
+      }}>
+        {children}
+      </div>
+      <div style={{
+        position: 'absolute', bottom: 8, left: 0, right: 0, zIndex: 70,
+        display: 'flex', justifyContent: 'center', pointerEvents: 'none',
+      }}>
+        <div style={{
+          width: 134, height: 5, borderRadius: 100,
+          background: dark ? 'rgba(255,255,255,0.5)' : 'rgba(43,31,38,0.45)',
+        }} />
+      </div>
+    </div>
+  );
+}
+
+function StatusBar({ dark }) {
+  const c = dark ? '#fff' : window.theme.colors.textPrimary;
+  return (
+    <div style={{
+      position: 'absolute', top: 0, left: 0, right: 0, height: 54, zIndex: 50,
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '18px 34px 0', pointerEvents: 'none',
+    }}>
+      <span style={{
+        fontFamily: '-apple-system, "SF Pro", system-ui',
+        fontSize: 16, fontWeight: 600, color: c, letterSpacing: -0.3,
+      }}>9:41</span>
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <svg width="17" height="11" viewBox="0 0 17 11">
+          <rect x="0" y="7"   width="3" height="4"   rx="0.6" fill={c} />
+          <rect x="4.3" y="4.5" width="3" height="6.5" rx="0.6" fill={c} />
+          <rect x="8.6" y="2"   width="3" height="9"   rx="0.6" fill={c} />
+          <rect x="12.9" y="0"   width="3" height="11"  rx="0.6" fill={c} />
+        </svg>
+        <svg width="15" height="11" viewBox="0 0 15 11">
+          <path d="M7.5 3C9.6 3 11.5 3.8 12.9 5.1L14 4.1C12.3 2.4 10 1.3 7.5 1.3C5 1.3 2.7 2.4 1 4.1L2.1 5.1C3.5 3.8 5.4 3 7.5 3Z" fill={c} />
+          <circle cx="7.5" cy="9.5" r="1.3" fill={c} />
+        </svg>
+        <svg width="24" height="12" viewBox="0 0 24 12">
+          <rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke={c} strokeOpacity="0.4" fill="none" />
+          <rect x="2" y="2" width="16" height="8" rx="1.8" fill={c} />
+          <rect x="22.5" y="4" width="1.2" height="4" rx="0.6" fill={c} fillOpacity="0.45" />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+function ScreenHeader({ title, subtitle, onBack, rightAction, large = true }) {
+  const t = window.theme;
+  return (
+    <div style={{ padding: `${large ? 4 : 6}px ${t.space.screen}px 4px`, flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 36 }}>
+        {onBack ? (
+          <button onClick={onBack} style={{
+            display: 'flex', alignItems: 'center', gap: 2, padding: '6px 6px 6px 0',
+            background: 'transparent', border: 'none', cursor: 'pointer',
+            color: t.colors.primaryDeep, fontFamily: t.font.sans,
+            fontSize: 15, fontWeight: 500,
+          }}>
+            <Icon name="back" size={22} />
+            <span>Back</span>
+          </button>
+        ) : <div />}
+        {rightAction || <div />}
+      </div>
+      {large && (
+        <div style={{ marginTop: 4 }}>
+          <h1 style={{
+            margin: 0, fontFamily: t.font.serif,
+            fontSize: 34, fontWeight: 700, letterSpacing: -0.5,
+            color: t.colors.textPrimary, lineHeight: 1.1,
+          }}>{title}</h1>
+          {subtitle && (
+            <div style={{
+              marginTop: 4, fontSize: 14, color: t.colors.textSecondary,
+              letterSpacing: -0.1,
+            }}>{subtitle}</div>
+          )}
+        </div>
+      )}
+      {!large && (
+        <div style={{
+          position: 'absolute', top: 22, left: 0, right: 0, textAlign: 'center',
+          fontFamily: t.font.serif, fontSize: 17, fontWeight: 600,
+          color: t.colors.textPrimary,
+        }}>{title}</div>
+      )}
+    </div>
+  );
+}
+
+function SectionLabel({ children, style = {} }) {
+  const t = window.theme;
+  return (
+    <div style={{
+      fontSize: 11, fontWeight: 600, letterSpacing: 1.2,
+      textTransform: 'uppercase',
+      color: t.colors.textMuted,
+      padding: `0 ${t.space.screen}px`,
+      marginBottom: 8,
+      ...style,
+    }}>{children}</div>
+  );
+}
+
+function MovementName({ en, ko, size = 16, weight = 500, accent, style = {} }) {
+  const t = window.theme;
+  return (
+    <div style={{ minWidth: 0, ...style }}>
+      <span style={{
+        fontFamily: t.font.serif, fontSize: size, fontWeight: weight,
+        color: accent || t.colors.textPrimary, letterSpacing: -0.2,
+      }}>{en}</span>
+      <span style={{
+        fontFamily: t.font.sans, fontSize: size - 3, fontWeight: 400,
+        color: t.colors.textSecondary, letterSpacing: -0.1,
+        marginLeft: 6,
+      }}>· {ko}</span>
+    </div>
+  );
+}
+
+function TabBar({ current, onChange, action }) {
+  const t = window.theme;
+  const tabs = [
+    { key: 'home',      label: '수업',   icon: 'home' },
+    { key: 'movements', label: '동작',   icon: 'movement' },
+    { key: 'settings',  label: '설정',   icon: 'gear' },
+  ];
+  const left  = action ? tabs.slice(0, 2) : tabs;
+  const right = action ? tabs.slice(2)    : [];
+
+  const renderTab = (tab) => {
+    const active = tab.key === current;
+    return (
+      <button key={tab.key} onClick={() => onChange(tab.key)} style={{
+        flex: 1, background: 'transparent', border: 'none', cursor: 'pointer',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+        padding: '6px 0',
+      }}>
+        <Icon name={tab.icon} size={24}
+          color={active ? t.colors.primaryDeep : t.colors.textMuted} />
+        <span style={{
+          fontSize: 10, fontWeight: 600, letterSpacing: -0.1,
+          color: active ? t.colors.primaryDeep : t.colors.textMuted,
+          whiteSpace: 'nowrap',
+        }}>{tab.label}</span>
+      </button>
+    );
+  };
+
+  return (
+    <div style={{
+      flexShrink: 0, borderTop: `0.5px solid ${t.colors.border}`,
+      background: 'rgba(253,246,243,0.88)',
+      backdropFilter: 'blur(20px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+      paddingTop: 6, paddingLeft: 0, paddingRight: 0,
+      paddingBottom: IS_MOBILE ? 'max(20px, env(safe-area-inset-bottom))' : 22,
+      display: 'flex', alignItems: 'flex-start',
+      position: 'relative',
+    }}>
+      {left.map(renderTab)}
+      {action && (
+        <div style={{
+          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '2px 8px 0',
+        }}>
+          <button onClick={action.onClick} style={{
+            width: 56, height: 56, borderRadius: 28,
+            background: t.colors.primaryDeep, color: '#fff',
+            border: `3px solid ${t.colors.background}`, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 8px 20px rgba(139,74,95,0.38), 0 2px 6px rgba(139,74,95,0.2)',
+            marginTop: -18,
+          }} aria-label={action.label}>
+            <Icon name={action.icon || 'plus'} size={24} color="#fff" />
+          </button>
+        </div>
+      )}
+      {right.map(renderTab)}
+    </div>
+  );
+}
+
+function EmptyState({ title, subtitle, action }) {
+  const t = window.theme;
+  return (
+    <div style={{
+      flex: 1, display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: `0 ${t.space.screen}px`, textAlign: 'center',
+    }}>
+      <div style={{
+        fontFamily: t.font.serif, fontSize: 54, color: t.colors.primary,
+        marginBottom: 12, lineHeight: 1,
+      }}>é</div>
+      <div style={{
+        fontFamily: t.font.serif, fontSize: 20, fontWeight: 600,
+        color: t.colors.textPrimary, marginBottom: 6,
+      }}>{title}</div>
+      {subtitle && <div style={{
+        fontSize: 14, color: t.colors.textSecondary, marginBottom: 20,
+        lineHeight: 1.5, maxWidth: 260,
+      }}>{subtitle}</div>}
+      {action}
+    </div>
+  );
+}
+
+function FAB({ onClick, icon = 'plus', label }) {
+  const t = window.theme;
+  const bottomVal = IS_MOBILE
+    ? 'calc(72px + env(safe-area-inset-bottom))'
+    : 90;
+  return (
+    <button onClick={onClick} style={{
+      position: 'absolute', right: 20, bottom: bottomVal, zIndex: 20,
+      height: 56, padding: label ? '0 22px 0 18px' : 0,
+      minWidth: 56, borderRadius: 28,
+      background: t.colors.primaryDeep, color: '#fff',
+      border: 'none', cursor: 'pointer',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+      boxShadow: '0 8px 24px rgba(139,74,95,0.38), 0 2px 6px rgba(139,74,95,0.2)',
+      fontFamily: t.font.sans, fontSize: 15, fontWeight: 600,
+    }}>
+      <Icon name={icon} size={22} color="#fff" />
+      {label && <span>{label}</span>}
+    </button>
+  );
+}
+
+function BottomCTA({ onClick, icon = 'plus', label }) {
+  const t = window.theme;
+  return (
+    <div style={{
+      position: 'absolute', left: 0, right: 0, bottom: 72,
+      padding: '10px 16px 14px',
+      background: `linear-gradient(180deg, rgba(253,246,243,0) 0%, ${t.colors.background} 40%)`,
+      pointerEvents: 'none', zIndex: 15,
+    }}>
+      <button onClick={onClick} style={{
+        pointerEvents: 'auto',
+        width: '100%', height: 52, borderRadius: 26,
+        background: t.colors.primaryDeep, color: '#fff',
+        border: 'none', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        boxShadow: '0 10px 28px rgba(139,74,95,0.32), 0 2px 6px rgba(139,74,95,0.2)',
+        fontFamily: t.font.sans, fontSize: 15.5, fontWeight: 600,
+        letterSpacing: -0.2,
+      }}>
+        <Icon name={icon} size={20} color="#fff" />
+        <span>{label}</span>
+      </button>
+    </div>
+  );
+}
+
+function formatDate(iso, opts = {}) {
+  const d = new Date(iso);
+  const Y = d.getFullYear(); const M = d.getMonth() + 1; const D = d.getDate();
+  const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+  const w = weekdays[d.getDay()];
+  if (opts.short) return `${M}월 ${D}일 (${w})`;
+  if (opts.long)  return `${Y}년 ${M}월 ${D}일 ${w}요일`;
+  return `${Y}.${String(M).padStart(2,'0')}.${String(D).padStart(2,'0')}`;
+}
+function formatRelative(iso) {
+  const now = new Date('2026-04-19T12:00:00');
+  const d = new Date(iso);
+  const days = Math.floor((now - d) / 86400000);
+  if (days === 0) return '오늘';
+  if (days === 1) return '어제';
+  if (days < 7) return `${days}일 전`;
+  if (days < 30) return `${Math.floor(days / 7)}주 전`;
+  return formatDate(iso, { short: true });
+}
+function formatTime(iso) {
+  const d = new Date(iso);
+  const h = d.getHours(); const m = d.getMinutes();
+  const ampm = h < 12 ? '오전' : '오후';
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${ampm} ${h12}:${String(m).padStart(2,'0')}`;
+}
+
+Object.assign(window, {
+  Icon, Button, PhoneShell, StatusBar,
+  ScreenHeader, SectionLabel, MovementName,
+  TabBar, EmptyState, FAB, BottomCTA,
+  formatDate, formatRelative, formatTime,
+});
+</script>
+
+<!-- ─── screens.jsx ──────────────────────────────────────────── -->
+<script type="text/babel">
+const { useState, useMemo, useEffect, useRef, Fragment } = React;
+
+// ═════════ S1. Home ═══════════════════════════════════════════
+function HomeScreen({ store, nav }) {
+  const t = window.theme;
+  const sessions = store.sessions;
+  const sorted = [...sessions].sort((a, b) => b.date.localeCompare(a.date));
+
+  return (
+    <>
+      <ScreenHeader title="Développé" subtitle={`${sessions.length}개의 수업 기록`} />
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 24 }}>
+        <div style={{ padding: `8px ${t.space.screen}px 0` }}>
+          {sorted.length === 0 ? (
+            <EmptyState
+              title="첫 수업을 기록해보세요"
+              subtitle="수업 중 받은 피드백이 동작별로 시간순으로 쌓입니다."
+              action={<Button icon="plus" onClick={() => nav.push('class-new')}>수업 추가</Button>}
+            />
+          ) : (
+            <>
+              <AttendanceStats sessions={sessions} />
+              <div style={{ height: 18 }} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {sorted.map((s, i) => <ClassCard key={s.id} session={s} store={store} onClick={() => nav.push('class-detail', { id: s.id })} highlight={i === 0} />)}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function AttendanceStats({ sessions }) {
+  const t = window.theme;
+  const [mode, setMode] = useState('month');
+
+  const { buckets, currentIdx } = useMemo(() => {
+    const refStr = sessions.map(s => s.date).sort().slice(-1)[0] || new Date().toISOString().slice(0, 10);
+    const refDate = parseISO(refStr);
+
+    if (mode === 'year') {
+      const out = [];
+      for (let i = 3; i >= 0; i--) {
+        const y = refDate.getFullYear() - i;
+        out.push({ key: String(y), label: String(y), count: 0 });
+      }
+      sessions.forEach(s => {
+        const k = s.date.slice(0, 4);
+        const b = out.find(x => x.key === k);
+        if (b) b.count += 1;
+      });
+      return { buckets: out, currentIdx: out.length - 1 };
+    }
+    if (mode === 'month') {
+      const out = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(refDate.getFullYear(), refDate.getMonth() - i, 1);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        out.push({ key, label: `${d.getMonth() + 1}월`, count: 0 });
+      }
+      sessions.forEach(s => {
+        const k = s.date.slice(0, 7);
+        const b = out.find(x => x.key === k);
+        if (b) b.count += 1;
+      });
+      return { buckets: out, currentIdx: out.length - 1 };
+    }
+    const out = [];
+    const refMon = mondayOf(refDate);
+    for (let i = 7; i >= 0; i--) {
+      const d = new Date(refMon.getFullYear(), refMon.getMonth(), refMon.getDate() - i * 7);
+      const key = ymd(d);
+      const label = `${d.getMonth() + 1}/${d.getDate()}`;
+      out.push({ key, label, count: 0 });
+    }
+    sessions.forEach(s => {
+      const d = parseISO(s.date);
+      const mon = mondayOf(d);
+      const k = ymd(mon);
+      const b = out.find(x => x.key === k);
+      if (b) b.count += 1;
+    });
+    return { buckets: out, currentIdx: out.length - 1 };
+  }, [sessions, mode]);
+
+  const max = Math.max(1, ...buckets.map(b => b.count));
+  const current = buckets[currentIdx];
+  const prev = buckets[currentIdx - 1];
+  const delta = current && prev ? current.count - prev.count : 0;
+  const total = buckets.reduce((n, b) => n + b.count, 0);
+
+  const modeCopy = {
+    year:  { current: '올해',    range: '최근 4년',   prev: '작년 대비' },
+    month: { current: '이번 달',  range: '최근 6개월', prev: '지난달 대비' },
+    week:  { current: '이번 주',  range: '최근 8주',   prev: '지난주 대비' },
+  }[mode];
+
+  return (
+    <div style={{
+      background: t.colors.surfaceAlt, borderRadius: t.radius.card,
+      border: `0.5px solid ${t.colors.border}`,
+      padding: '14px 16px 16px',
+      display: 'flex', flexDirection: 'column', gap: 12,
+      fontFamily: t.font.sans,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <div style={{
+          display: 'flex', background: t.colors.background, borderRadius: 8, padding: 2,
+          border: `0.5px solid ${t.colors.border}`,
+        }}>
+          {[{ k: 'year', l: 'Year' }, { k: 'month', l: 'Month' }, { k: 'week', l: 'Week' }].map(o => (
+            <button key={o.k} onClick={() => setMode(o.k)} style={{
+              padding: '5px 11px', border: 'none', borderRadius: 6, cursor: 'pointer',
+              background: mode === o.k ? t.colors.surfaceAlt : 'transparent',
+              color: mode === o.k ? t.colors.primaryDeep : t.colors.textMuted,
+              fontFamily: t.font.sans, fontSize: 12, fontWeight: 600,
+              letterSpacing: 0.2,
+              boxShadow: mode === o.k ? '0 1px 2px rgba(43,31,38,0.08)' : 'none',
+            }}>{o.l}</button>
+          ))}
+        </div>
+        <span style={{
+          fontSize: 11, color: t.colors.textMuted, letterSpacing: 0.3,
+          textTransform: 'uppercase', fontWeight: 500,
+        }}>
+          {modeCopy.range} · 총 {total}회
+        </span>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+        <span style={{
+          fontFamily: t.font.serif, fontSize: 42, fontWeight: 600,
+          color: t.colors.textPrimary, letterSpacing: -1.5, lineHeight: 1,
+          fontVariantNumeric: 'tabular-nums',
+        }}>{current?.count ?? 0}</span>
+        <span style={{ fontSize: 13, color: t.colors.textSecondary, letterSpacing: -0.1 }}>
+          {modeCopy.current} 클래스
+        </span>
+        {prev && (
+          <span style={{
+            marginLeft: 'auto', fontSize: 12, fontWeight: 600,
+            color: delta > 0 ? t.colors.success : delta < 0 ? t.colors.danger : t.colors.textMuted,
+            letterSpacing: -0.1, fontVariantNumeric: 'tabular-nums',
+          }}>
+            {delta > 0 ? '↑' : delta < 0 ? '↓' : '→'} {delta === 0 ? '변화 없음' : `${Math.abs(delta)}회`}
+          </span>
+        )}
+      </div>
+
+      <div style={{
+        display: 'flex', alignItems: 'flex-end',
+        gap: mode === 'year' ? 12 : mode === 'month' ? 8 : 5,
+        height: 56,
+      }}>
+        {buckets.map((b, i) => {
+          const h = (b.count / max) * 100;
+          const isCurrent = i === currentIdx;
+          return (
+            <div key={b.key} style={{
+              flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+              minWidth: 0,
+            }}>
+              <div style={{ width: '100%', height: 40, display: 'flex', alignItems: 'flex-end' }}>
+                <div style={{
+                  width: '100%',
+                  height: b.count === 0 ? 2 : `${Math.max(8, h)}%`,
+                  background: isCurrent ? t.colors.primaryDeep
+                          : b.count === 0 ? t.colors.border
+                          : t.colors.primary,
+                  borderRadius: 3,
+                  position: 'relative',
+                }}>
+                  {b.count > 0 && (
+                    <span style={{
+                      position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)',
+                      fontSize: 10, fontWeight: 600, color: isCurrent ? t.colors.primaryDeep : t.colors.textMuted,
+                      fontVariantNumeric: 'tabular-nums',
+                    }}>{b.count}</span>
+                  )}
+                </div>
+              </div>
+              <span style={{
+                fontSize: 10, color: isCurrent ? t.colors.textPrimary : t.colors.textMuted,
+                fontWeight: isCurrent ? 600 : 500, letterSpacing: -0.1,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                width: '100%', textAlign: 'center',
+              }}>{b.label}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function parseISO(s) {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+function ymd(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function mondayOf(d) {
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1 - day);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + diff);
+}
+
+function ClassCard({ session, store, onClick, highlight }) {
+  const t = window.theme;
+  const studio = store.studios.find(x => x.id === session.studioId);
+  const teacher = store.teachers.find(x => x.id === session.teacherId);
+  const level = store.levels.find(x => x.id === session.levelId);
+  const count = Object.values(session.notes || {}).reduce((n, v) => n + (Array.isArray(v) ? v.length : 0), 0);
+  const rel = formatRelative(session.date);
+
+  return (
+    <button onClick={onClick} style={{
+      textAlign: 'left', width: '100%', cursor: 'pointer',
+      background: highlight ? t.colors.surface : t.colors.surfaceAlt,
+      border: `0.5px solid ${highlight ? 'transparent' : t.colors.border}`,
+      borderRadius: t.radius.card, padding: 16,
+      display: 'flex', flexDirection: 'column', gap: 10,
+      fontFamily: t.font.sans,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+          <span style={{
+            fontFamily: t.font.serif, fontSize: 20, fontWeight: 600,
+            color: t.colors.textPrimary, letterSpacing: -0.3,
+            whiteSpace: 'nowrap', lineHeight: 1.1,
+          }}>{formatDate(session.date, { short: true })}</span>
+          <span style={{
+            fontSize: 11, color: t.colors.textMuted, whiteSpace: 'nowrap',
+            letterSpacing: 0.2, textTransform: 'uppercase', fontWeight: 500,
+          }}>{rel}</span>
+        </div>
+        {count > 0 && (
+          <div style={{
+            fontSize: 11, fontWeight: 600, letterSpacing: 0.3,
+            color: t.colors.primaryDeep,
+            background: highlight ? 'rgba(139,74,95,0.1)' : t.colors.surface,
+            padding: '3px 8px', borderRadius: 10,
+            whiteSpace: 'nowrap', flexShrink: 0,
+          }}>피드백 {count}</div>
+        )}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ fontSize: 15, fontWeight: 500, color: t.colors.textPrimary, letterSpacing: -0.2 }}>
+          {studio?.name || '—'}
+        </div>
+        <div style={{ fontSize: 13, color: t.colors.textSecondary, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {teacher && <span style={{ whiteSpace: 'nowrap' }}>{teacher.name}</span>}
+          {level && <><span style={{ color: t.colors.textMuted }}>·</span><span style={{ whiteSpace: 'nowrap' }}>{level.name}</span></>}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+// ═════════ S2. New Class ══════════════════════════════════════
+function NewClassScreen({ store, nav, params }) {
+  const t = window.theme;
+  const editing = params?.editId ? store.sessions.find(s => s.id === params.editId) : null;
+  const [date, setDate] = useState(editing?.date || '2026-04-19');
+  const [studioId, setStudioId] = useState(editing?.studioId ?? null);
+  const [teacherId, setTeacherId] = useState(editing?.teacherId ?? null);
+  const [levelId, setLevelId] = useState(editing?.levelId ?? null);
+  const [notes, setNotes] = useState(editing?.notes && typeof editing.notes === 'object' ? editing.notes : {});
+  const [section, setSection] = useState('barre');
+
+  const save = () => {
+    if (editing) {
+      store.updateSession(editing.id, { date, studioId, teacherId, levelId, notes });
+      nav.back();
+    } else {
+      const id = store.createSession({ date, studioId, teacherId, levelId, notes });
+      nav.replace('class-detail', { id });
+    }
+  };
+
+  const valid = !!date;
+
+  return (
+    <>
+      <div style={{
+        flexShrink: 0, padding: `4px ${t.space.screen}px 8px`,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        minHeight: 44, gap: 12,
+      }}>
+        <button onClick={() => nav.back()} style={{
+          color: t.colors.primaryDeep, background: 'transparent', border: 'none',
+          padding: '6px 0', fontSize: 15, cursor: 'pointer', fontFamily: t.font.sans,
+          whiteSpace: 'nowrap', flexShrink: 0,
+        }}>취소</button>
+        <span style={{ fontFamily: t.font.serif, fontWeight: 600, fontSize: 17, whiteSpace: 'nowrap' }}>{editing ? '수업 수정' : '새 수업'}</span>
+        <button onClick={save} disabled={!valid} style={{
+          color: valid ? t.colors.primaryDeep : t.colors.textMuted,
+          background: 'transparent', border: 'none', padding: '6px 0',
+          fontSize: 15, fontWeight: 600, cursor: valid ? 'pointer' : 'default',
+          fontFamily: t.font.sans, whiteSpace: 'nowrap', flexShrink: 0,
+        }}>저장</button>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 40 }}>
+        <div style={{ padding: `16px ${t.space.screen}px` }}>
+          <FormCard>
+            <FormRow label="날짜" icon="calendar">
+              <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputStyle(t)} />
+            </FormRow>
+            <FormRow label="학원" icon="studio">
+              <SelectOrCreate
+                options={store.studios.map(s => ({ value: s.id, label: s.name }))}
+                value={studioId} onChange={setStudioId}
+                placeholder="선택 또는 추가"
+              />
+            </FormRow>
+            <FormRow label="선생님" icon="teacher">
+              <SelectOrCreate
+                options={store.teachers
+                  .sort((a, b) => (a.studioId === studioId ? -1 : 1))
+                  .map(x => ({ value: x.id, label: x.name, sub: store.studios.find(s => s.id === x.studioId)?.name }))}
+                value={teacherId} onChange={setTeacherId}
+                placeholder="선택 또는 추가"
+              />
+            </FormRow>
+            <FormRow label="레벨" icon="level" last>
+              <SelectOrCreate
+                options={store.levels.map(l => ({ value: l.id, label: l.name }))}
+                value={levelId} onChange={setLevelId}
+                placeholder="선택"
+              />
+            </FormRow>
+          </FormCard>
+          <div style={{ height: 16 }} />
+          <FlowTabs section={section} onChange={setSection} />
+          <div style={{ height: 10 }} />
+          <FlowList
+            movements={window.MOVEMENTS[section]}
+            notes={notes}
+            onChange={(key, val) => setNotes(n => ({ ...n, [key]: val }))}
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
+function FlowTabs({ section, onChange }) {
+  const t = window.theme;
+  const tabs = [
+    { key: 'barre',  label: 'Barre',  sub: '바' },
+    { key: 'center', label: 'Center', sub: '센터' },
+    { key: 'misc',   label: 'Misc',   sub: '기타' },
+  ];
+  return (
+    <div style={{
+      display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 4,
+      background: t.colors.surfaceAlt, borderRadius: 10, padding: 3,
+      border: `0.5px solid ${t.colors.border}`,
+    }}>
+      {tabs.map(tab => {
+        const active = section === tab.key;
+        return (
+          <button key={tab.key} onClick={() => onChange(tab.key)} style={{
+            padding: '8px 4px', border: 'none', borderRadius: 8, cursor: 'pointer',
+            background: active ? t.colors.surface : 'transparent',
+            boxShadow: active ? '0 1px 3px rgba(43,31,38,0.08)' : 'none',
+            display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 5,
+            fontFamily: t.font.sans, whiteSpace: 'nowrap', minWidth: 0,
+          }}>
+            <span style={{
+              fontSize: 13, fontWeight: 600,
+              color: active ? t.colors.textPrimary : t.colors.textSecondary,
+            }}>{tab.label}</span>
+            <span style={{
+              fontSize: 11, color: active ? t.colors.textSecondary : t.colors.textMuted,
+            }}>· {tab.sub}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function FlowList({ movements, notes, onChange }) {
+  const t = window.theme;
+  return (
+    <div style={{
+      background: t.colors.surfaceAlt, borderRadius: t.radius.card,
+      border: `0.5px solid ${t.colors.border}`, overflow: 'hidden',
+    }}>
+      {movements.map((m, i) => (
+        <FlowRow
+          key={m.key}
+          movement={m}
+          index={i}
+          isLast={i === movements.length - 1}
+          comments={Array.isArray(notes[m.key]) ? notes[m.key] : []}
+          onChange={next => onChange(m.key, next)}
+        />
+      ))}
+    </div>
+  );
+}
+
+function FlowRow({ movement: m, index: i, isLast, comments, onChange }) {
+  const t = window.theme;
+  const [draft, setDraft] = useState('');
+  const filled = comments.length > 0;
+
+  const commit = () => {
+    const trimmed = draft.trim();
+    if (!trimmed) return;
+    onChange([...comments, trimmed]);
+    setDraft('');
+  };
+
+  const removeAt = (idx) => {
+    onChange(comments.filter((_, j) => j !== idx));
+  };
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'flex-start', gap: 10,
+      padding: '12px 14px',
+      borderBottom: isLast ? 'none' : `0.5px solid ${t.colors.border}`,
+    }}>
+      <div style={{
+        flexShrink: 0, width: 22, height: 22, borderRadius: 11,
+        border: `1px solid ${filled ? t.colors.primaryDeep : t.colors.border}`,
+        background: filled ? t.colors.primaryDeep : 'transparent',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        marginTop: 2, fontFamily: t.font.serif, fontSize: 11, fontWeight: 600,
+        color: filled ? t.colors.surface : t.colors.textMuted,
+      }}>{i + 1}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap', marginBottom: comments.length ? 6 : 4, rowGap: 2, lineHeight: 1.25 }}>
+          <span style={{
+            fontFamily: t.font.serif, fontSize: 14, fontWeight: 600,
+            color: t.colors.textPrimary, letterSpacing: -0.1,
+            whiteSpace: 'nowrap',
+          }}>{m.en}</span>
+          <span style={{ fontSize: 11, color: t.colors.textMuted, whiteSpace: 'nowrap' }}>· {m.ko}</span>
+        </div>
+        {comments.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 6 }}>
+            {comments.map((c, j) => (
+              <div key={j} style={{
+                display: 'flex', alignItems: 'flex-start', gap: 8,
+                padding: '7px 10px',
+                background: t.colors.surface,
+                borderRadius: 8,
+              }}>
+                <span style={{
+                  flexShrink: 0, color: t.colors.primaryDeep,
+                  fontSize: 13, fontWeight: 600, marginTop: 1,
+                }}>·</span>
+                <span style={{
+                  flex: 1, fontSize: 14, lineHeight: 1.5,
+                  color: t.colors.textPrimary, wordBreak: 'break-word',
+                }}>{c}</span>
+                <button onClick={() => removeAt(j)} style={{
+                  flexShrink: 0, border: 'none', background: 'transparent',
+                  padding: 0, cursor: 'pointer', color: t.colors.textMuted,
+                  fontSize: 13, marginTop: 1, lineHeight: 1,
+                }} aria-label="삭제">×</button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <input
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') { e.preventDefault(); commit(); }
+            }}
+            placeholder={comments.length ? '코멘트 추가…' : '메모 입력 후 Enter'}
+            style={{
+              flex: 1, border: 'none', outline: 'none',
+              fontFamily: t.font.sans, fontSize: 14,
+              color: t.colors.textPrimary, background: 'transparent',
+              padding: 0, minWidth: 0,
+            }}
+          />
+          {draft.trim() && (
+            <button onClick={commit} style={{
+              flexShrink: 0, border: 'none', background: t.colors.primaryDeep,
+              color: t.colors.surface, fontSize: 12, fontWeight: 600,
+              padding: '4px 10px', borderRadius: 6, cursor: 'pointer',
+              fontFamily: t.font.sans,
+            }}>추가</button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FormCard({ children }) {
+  const t = window.theme;
+  return (
+    <div style={{
+      background: t.colors.surfaceAlt, borderRadius: t.radius.card,
+      border: `0.5px solid ${t.colors.border}`,
+      position: 'relative',
+    }}>{children}</div>
+  );
+}
+
+function FormRow({ label, icon, children, last }) {
+  const t = window.theme;
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 12,
+      padding: '12px 14px',
+      borderBottom: last ? 'none' : `0.5px solid ${t.colors.border}`,
+      minHeight: 52,
+    }}>
+      <div style={{
+        width: 74, display: 'flex', alignItems: 'center', gap: 7,
+        color: t.colors.textSecondary, fontSize: 13, fontWeight: 500, letterSpacing: -0.1,
+      }}>
+        {icon && <Icon name={icon} size={15} color={t.colors.textMuted} />}
+        {label}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>{children}</div>
+    </div>
+  );
+}
+
+function inputStyle(t) {
+  return {
+    width: '100%', border: 'none', outline: 'none',
+    fontFamily: t.font.sans, fontSize: 15, color: t.colors.textPrimary,
+    background: 'transparent', padding: 0,
+  };
+}
+
+function SelectOrCreate({ options, value, onChange, placeholder, openUp }) {
+  const t = window.theme;
+  const [open, setOpen] = useState(false);
+  const selected = options.find(o => o.value === value);
+  return (
+    <div style={{ position: 'relative', minWidth: 0 }}>
+      <button onClick={() => setOpen(o => !o)} style={{
+        width: '100%', textAlign: 'left', background: 'transparent', border: 'none',
+        padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between', gap: 8, fontFamily: t.font.sans,
+      }}>
+        <span style={{
+          fontSize: 15,
+          color: selected ? t.colors.textPrimary : t.colors.textMuted,
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          flex: 1, minWidth: 0,
+        }}>{selected?.label || placeholder}</span>
+        <Icon name="chevronDown" size={16} color={t.colors.textMuted} style={{ flexShrink: 0 }} />
+      </button>
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 80 }} />
+          <div style={{
+            position: 'absolute',
+            ...(openUp ? { bottom: 'calc(100% + 6px)' } : { top: 'calc(100% + 6px)' }),
+            left: -10, right: -10, zIndex: 90,
+            background: t.colors.surfaceAlt,
+            borderRadius: t.radius.card,
+            border: `0.5px solid ${t.colors.border}`,
+            boxShadow: '0 12px 36px rgba(43,31,38,0.18)',
+            padding: 4, maxHeight: 240, overflowY: 'auto',
+          }}>
+            {options.map(o => (
+              <button key={o.value} onClick={() => { onChange(o.value); setOpen(false); }} style={{
+                width: '100%', textAlign: 'left', background: 'transparent', border: 'none',
+                padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                fontFamily: t.font.sans,
+                color: o.value === value ? t.colors.primaryDeep : t.colors.textPrimary,
+                background: o.value === value ? t.colors.surface : 'transparent',
+              }}>
+                <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span style={{ fontSize: 15, fontWeight: 500 }}>{o.label}</span>
+                  {o.sub && <span style={{ fontSize: 12, color: t.colors.textMuted }}>{o.sub}</span>}
+                </span>
+                {o.value === value && <Icon name="check" size={16} color={t.colors.primaryDeep} />}
+              </button>
+            ))}
+            <div style={{ height: 0.5, background: t.colors.border, margin: '4px 8px' }} />
+            <button style={{
+              width: '100%', textAlign: 'left', background: 'transparent', border: 'none',
+              padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 8,
+              color: t.colors.primaryDeep, fontSize: 15, fontWeight: 500,
+              fontFamily: t.font.sans,
+            }}>
+              <Icon name="plus" size={15} color={t.colors.primaryDeep} />
+              새로 추가
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ═════════ S3. Class Detail ═══════════════════════════════════
+function ClassDetailScreen({ store, nav, params }) {
+  const t = window.theme;
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const session = store.sessions.find(s => s.id === params.id);
+  if (!session) return null;
+  const studio = store.studios.find(x => x.id === session.studioId);
+  const teacher = store.teachers.find(x => x.id === session.teacherId);
+  const level = store.levels.find(x => x.id === session.levelId);
+
+  const handleDelete = () => {
+    if (!confirmDelete) { setConfirmDelete(true); return; }
+    store.deleteSession(session.id);
+    nav.reset('home');
+  };
+
+  return (
+    <>
+      <ScreenHeader
+        title={formatDate(session.date, { short: true })}
+        subtitle={formatRelative(session.date)}
+        onBack={() => nav.back()}
+        rightAction={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {confirmDelete ? (
+              <>
+                <button onClick={() => setConfirmDelete(false)} style={{
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  padding: '6px 6px', color: t.colors.textMuted,
+                  fontFamily: t.font.sans, fontSize: 14, fontWeight: 500,
+                }}>취소</button>
+                <button onClick={handleDelete} style={{
+                  background: t.colors.danger, border: 'none', cursor: 'pointer',
+                  padding: '5px 10px', borderRadius: 8,
+                  color: '#fff', fontFamily: t.font.sans, fontSize: 13, fontWeight: 600,
+                }}>삭제 확인</button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => nav.push('class-new', { editId: session.id })} style={{
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  padding: '6px 4px', color: t.colors.primaryDeep,
+                  fontFamily: t.font.sans, fontSize: 14, fontWeight: 600,
+                  letterSpacing: -0.1,
+                }}>수정</button>
+                <button onClick={handleDelete} style={{
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  padding: '6px 4px', color: t.colors.danger,
+                  fontFamily: t.font.sans, fontSize: 14, fontWeight: 500,
+                  letterSpacing: -0.1,
+                }}>삭제</button>
+              </>
+            )}
+          </div>
+        }
+      />
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 130 }}>
+        <div style={{ padding: `8px ${t.space.screen}px 0` }}>
+          <div style={{
+            background: t.colors.surface, borderRadius: t.radius.card,
+            padding: 16, display: 'flex', flexDirection: 'column', gap: 10,
+          }}>
+            <MetaRow icon="studio"  label={studio?.name || '—'} />
+            <MetaRow icon="teacher" label={teacher?.name || '—'} />
+            <MetaRow icon="level"   label={level?.name || '—'} />
+          </div>
+          <FlowMemoDisplay notes={session.notes} />
+        </div>
+      </div>
+    </>
+  );
+}
+
+function FlowMemoDisplay({ notes }) {
+  const t = window.theme;
+  const memo = notes && typeof notes === 'object' ? notes : {};
+  const sections = [
+    { key: 'barre',  label: 'Barre',  sub: '바' },
+    { key: 'center', label: 'Center', sub: '센터' },
+    { key: 'misc',   label: 'Misc',   sub: '기타' },
+  ];
+  const hasAny = sections.some(s =>
+    window.MOVEMENTS[s.key].some(m => Array.isArray(memo[m.key]) && memo[m.key].length > 0)
+  );
+  if (!hasAny) return null;
+
+  return (
+    <div style={{ marginTop: 24 }}>
+      {sections.map(sec => {
+        const entries = window.MOVEMENTS[sec.key].filter(m => Array.isArray(memo[m.key]) && memo[m.key].length > 0);
+        if (!entries.length) return null;
+        return (
+          <div key={sec.key} style={{ marginBottom: 16 }}>
+            <div style={{
+              display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8,
+              paddingLeft: 2, whiteSpace: 'nowrap', flexWrap: 'nowrap',
+            }}>
+              <span style={{
+                fontFamily: t.font.serif, fontSize: 15, fontWeight: 600,
+                color: t.colors.textPrimary, letterSpacing: -0.1,
+              }}>{sec.label}</span>
+              <span style={{ fontSize: 11, color: t.colors.textMuted }}>· {sec.sub}</span>
+            </div>
+            <div style={{
+              background: t.colors.surfaceAlt, borderRadius: t.radius.card,
+              border: `0.5px solid ${t.colors.border}`, overflow: 'hidden',
+            }}>
+              {entries.map((m, i) => (
+                <div key={m.key} style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 10,
+                  padding: '12px 14px',
+                  borderBottom: i === entries.length - 1 ? 'none' : `0.5px solid ${t.colors.border}`,
+                }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap', marginBottom: 3, rowGap: 2, lineHeight: 1.25 }}>
+                      <span style={{
+                        fontFamily: t.font.serif, fontSize: 14, fontWeight: 600,
+                        color: t.colors.textPrimary, letterSpacing: -0.1,
+                        whiteSpace: 'nowrap',
+                      }}>{m.en}</span>
+                      <span style={{ fontSize: 11, color: t.colors.textMuted, whiteSpace: 'nowrap' }}>· {m.ko}</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {(memo[m.key] || []).map((c, ci) => (
+                        <div key={ci} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                          <span style={{
+                            flexShrink: 0, color: t.colors.primaryDeep,
+                            fontSize: 13, fontWeight: 600, lineHeight: 1.55,
+                          }}>·</span>
+                          <span style={{
+                            flex: 1, fontSize: 14, lineHeight: 1.55,
+                            color: t.colors.textPrimary, whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
+                          }}>{c}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function MetaRow({ icon, label }) {
+  const t = window.theme;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+      <div style={{ flexShrink: 0, display: 'flex' }}>
+        <Icon name={icon} size={16} color={t.colors.primaryDeep} />
+      </div>
+      <span style={{
+        fontSize: 15, color: t.colors.textPrimary, letterSpacing: -0.1,
+        minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+      }}>{label}</span>
+    </div>
+  );
+}
+
+function FeedbackItem({ fb, compact }) {
+  const t = window.theme;
+  const mv = [...window.MOVEMENTS.barre, ...window.MOVEMENTS.center].find(m => m.key === fb.movementKey);
+  return (
+    <div style={{
+      background: t.colors.surfaceAlt, borderRadius: t.radius.card,
+      border: `0.5px solid ${t.colors.border}`, padding: 14,
+      display: 'flex', flexDirection: 'column', gap: 8,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <MovementName en={mv?.en} ko={mv?.ko} size={15} weight={600} />
+        </div>
+        <span style={{
+          fontSize: 11, color: t.colors.textMuted, fontVariantNumeric: 'tabular-nums',
+          whiteSpace: 'nowrap', flexShrink: 0,
+        }}>{formatTime(fb.createdAt)}</span>
+      </div>
+      <div style={{ fontSize: 14.5, lineHeight: 1.6, color: t.colors.textPrimary, letterSpacing: -0.1 }}>{fb.body}</div>
+    </div>
+  );
+}
+
+// ═════════ S4. Feedback New (2-step modal) ════════════════════
+function FeedbackNewScreen({ store, nav, params }) {
+  const t = window.theme;
+  const [step, setStep] = useState(1);
+  const [moveKey, setMoveKey] = useState(null);
+  const [body, setBody] = useState('');
+  const [cat, setCat] = useState('barre');
+  const [continuousMode, setContinuousMode] = useState(false);
+
+  const session = store.sessions.find(s => s.id === params.sessionId);
+  const usedKeys = useMemo(() => new Set(
+    store.feedback.filter(f => f.sessionId === params.sessionId).map(f => f.movementKey)
+  ), [store.feedback, params.sessionId]);
+
+  const save = () => {
+    store.createFeedback({ sessionId: params.sessionId, movementKey: moveKey, body });
+    if (continuousMode) {
+      setStep(1); setMoveKey(null); setBody('');
+    } else {
+      nav.back();
+    }
+  };
+
+  return (
+    <>
+      <div style={{
+        flexShrink: 0, padding: `4px ${t.space.screen}px 8px`,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        minHeight: 44, gap: 12,
+      }}>
+        <button onClick={() => step === 2 ? setStep(1) : nav.back()} style={{
+          color: t.colors.primaryDeep, background: 'transparent', border: 'none',
+          padding: '6px 0', fontSize: 15, cursor: 'pointer', fontFamily: t.font.sans,
+          display: 'flex', alignItems: 'center', gap: 2,
+          whiteSpace: 'nowrap', flexShrink: 0,
+        }}>
+          {step === 2 && <Icon name="back" size={20} />}
+          {step === 2 ? '동작' : '취소'}
+        </button>
+        <span style={{ fontFamily: t.font.serif, fontWeight: 600, fontSize: 17, whiteSpace: 'nowrap' }}>
+          {step === 1 ? '동작 선택' : '피드백'}
+        </span>
+        <button onClick={save} disabled={!moveKey || !body.trim() || step === 1} style={{
+          color: (moveKey && body.trim() && step === 2) ? t.colors.primaryDeep : t.colors.textMuted,
+          background: 'transparent', border: 'none', padding: '6px 0',
+          fontSize: 15, fontWeight: 600, fontFamily: t.font.sans,
+          cursor: (moveKey && body.trim() && step === 2) ? 'pointer' : 'default',
+          whiteSpace: 'nowrap', flexShrink: 0,
+        }}>저장</button>
+      </div>
+
+      <div style={{ display: 'flex', gap: 4, padding: `0 ${t.space.screen}px`, marginBottom: 14 }}>
+        <div style={{ flex: 1, height: 3, borderRadius: 2, background: t.colors.primaryDeep }} />
+        <div style={{ flex: 1, height: 3, borderRadius: 2, background: step === 2 ? t.colors.primaryDeep : t.colors.border }} />
+      </div>
+
+      {step === 1 ? (
+        <FeedbackStep1 cat={cat} setCat={setCat} moveKey={moveKey} onPick={(k) => { setMoveKey(k); setStep(2); }} usedKeys={usedKeys} />
+      ) : (
+        <FeedbackStep2 moveKey={moveKey} body={body} setBody={setBody} continuousMode={continuousMode} setContinuousMode={setContinuousMode} session={session} store={store} />
+      )}
+    </>
+  );
+}
+
+function FeedbackStep1({ cat, setCat, moveKey, onPick, usedKeys }) {
+  const t = window.theme;
+  const list = window.MOVEMENTS[cat];
+  return (
+    <>
+      <div style={{ margin: `0 ${t.space.screen}px 14px`, display: 'flex', background: t.colors.surface, borderRadius: 10, padding: 3 }}>
+        {['barre', 'center'].map(c => (
+          <button key={c} onClick={() => setCat(c)} style={{
+            flex: 1, padding: '7px 0', borderRadius: 8, border: 'none',
+            background: cat === c ? t.colors.surfaceAlt : 'transparent',
+            color: cat === c ? t.colors.primaryDeep : t.colors.textSecondary,
+            fontFamily: t.font.sans, fontSize: 14, fontWeight: 600,
+            cursor: 'pointer', letterSpacing: -0.1,
+            boxShadow: cat === c ? '0 1px 3px rgba(43,31,38,0.08)' : 'none',
+          }}>
+            {c === 'barre' ? 'Barre · 바' : 'Center · 센터'}
+          </button>
+        ))}
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 30 }}>
+        <div style={{ padding: `0 ${t.space.screen}px`, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {list.map(m => {
+            const used = usedKeys.has(m.key);
+            const sel = m.key === moveKey;
+            return (
+              <button key={m.key} onClick={() => onPick(m.key)} style={{
+                position: 'relative', textAlign: 'left', cursor: 'pointer',
+                background: sel ? t.colors.primaryDeep : t.colors.surfaceAlt,
+                color: sel ? '#fff' : t.colors.textPrimary,
+                border: `0.5px solid ${sel ? 'transparent' : t.colors.border}`,
+                borderRadius: t.radius.card, padding: '14px 12px',
+                minHeight: 78, fontFamily: t.font.sans,
+                display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 3,
+              }}>
+                <div style={{
+                  fontFamily: t.font.serif, fontSize: 15, fontWeight: 600,
+                  color: sel ? '#fff' : t.colors.textPrimary,
+                  letterSpacing: -0.2, lineHeight: 1.2,
+                }}>{m.en}</div>
+                <div style={{ fontSize: 12, color: sel ? 'rgba(255,255,255,0.75)' : t.colors.textSecondary, letterSpacing: -0.1 }}>{m.ko}</div>
+                {used && (
+                  <div style={{
+                    position: 'absolute', top: 8, right: 8,
+                    width: 6, height: 6, borderRadius: 3,
+                    background: sel ? '#fff' : t.colors.primary,
+                  }} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function FeedbackStep2({ moveKey, body, setBody, continuousMode, setContinuousMode, session, store }) {
+  const t = window.theme;
+  const mv = [...window.MOVEMENTS.barre, ...window.MOVEMENTS.center].find(m => m.key === moveKey);
+  const pastCount = store.feedback.filter(f => f.movementKey === moveKey).length;
+  return (
+    <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ padding: `0 ${t.space.screen}px 20px` }}>
+        <div style={{
+          background: t.colors.surface, borderRadius: t.radius.card,
+          padding: '14px 16px', marginBottom: 14,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+        }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <MovementName en={mv?.en} ko={mv?.ko} size={17} weight={600} />
+          </div>
+          {pastCount > 0 && (
+            <span style={{
+              fontSize: 11, color: t.colors.primaryDeep, fontWeight: 600,
+              background: 'rgba(139,74,95,0.1)', padding: '3px 8px', borderRadius: 10,
+              whiteSpace: 'nowrap', flexShrink: 0,
+            }}>과거 {pastCount}</span>
+          )}
+        </div>
+        <div style={{
+          background: t.colors.surfaceAlt, borderRadius: t.radius.card,
+          border: `0.5px solid ${t.colors.border}`, padding: 14,
+          minHeight: 200,
+        }}>
+          <textarea
+            value={body} onChange={e => setBody(e.target.value)}
+            placeholder="피드백을 그대로 받아적으세요. 짧아도 괜찮습니다."
+            autoFocus rows={7}
+            style={{
+              width: '100%', border: 'none', outline: 'none', resize: 'none',
+              fontFamily: t.font.sans, fontSize: 16, lineHeight: 1.6,
+              color: t.colors.textPrimary, background: 'transparent',
+              letterSpacing: -0.1,
+            }}
+          />
+        </div>
+        <div style={{
+          marginTop: 14, padding: '12px 14px',
+          background: t.colors.surfaceAlt, borderRadius: t.radius.card,
+          border: `0.5px solid ${t.colors.border}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={{ fontSize: 14, fontWeight: 500, color: t.colors.textPrimary }}>연속 추가</span>
+            <span style={{ fontSize: 11.5, color: t.colors.textMuted }}>저장 후 바로 다음 피드백 입력</span>
+          </div>
+          <Toggle value={continuousMode} onChange={setContinuousMode} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Toggle({ value, onChange }) {
+  const t = window.theme;
+  return (
+    <button onClick={() => onChange(!value)} style={{
+      width: 46, height: 28, borderRadius: 14,
+      background: value ? t.colors.primaryDeep : t.colors.border,
+      border: 'none', cursor: 'pointer', padding: 0,
+      position: 'relative', transition: 'background 0.2s',
+    }}>
+      <div style={{
+        position: 'absolute', top: 2, left: value ? 20 : 2,
+        width: 24, height: 24, borderRadius: 12, background: '#fff',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+        transition: 'left 0.2s',
+      }} />
+    </button>
+  );
+}
+
+// ═════════ S5. Movement Browse ════════════════════════════════
+function MovementsScreen({ store, nav }) {
+  const t = window.theme;
+  const [cat, setCat] = useState('barre');
+  const list = window.MOVEMENTS[cat];
+  const counts = useMemo(() => {
+    const m = {};
+    store.sessions.forEach(s => {
+      const notes = s.notes || {};
+      Object.keys(notes).forEach(k => {
+        const arr = Array.isArray(notes[k]) ? notes[k] : [];
+        if (arr.length === 0) return;
+        if (!m[k]) m[k] = { count: 0, last: '' };
+        m[k].count += arr.length;
+        if (s.date > m[k].last) m[k].last = s.date;
+      });
+    });
+    return m;
+  }, [store.sessions]);
+
+  return (
+    <>
+      <ScreenHeader title="동작" subtitle="기록된 피드백을 동작별로" />
+      <div style={{ padding: `4px ${t.space.screen}px 14px` }}>
+        <div style={{ display: 'flex', background: t.colors.surface, borderRadius: 10, padding: 3 }}>
+          {[
+            { key: 'barre',  label: 'Barre',  sub: '바' },
+            { key: 'center', label: 'Center', sub: '센터' },
+            { key: 'misc',   label: 'Misc',   sub: '기타' },
+          ].map(c => (
+            <button key={c.key} onClick={() => setCat(c.key)} style={{
+              flex: 1, padding: '7px 4px', borderRadius: 8, border: 'none',
+              background: cat === c.key ? t.colors.surfaceAlt : 'transparent',
+              color: cat === c.key ? t.colors.primaryDeep : t.colors.textSecondary,
+              fontFamily: t.font.sans, fontSize: 13, fontWeight: 600,
+              cursor: 'pointer', letterSpacing: -0.1,
+              boxShadow: cat === c.key ? '0 1px 3px rgba(43,31,38,0.08)' : 'none',
+              whiteSpace: 'nowrap', minWidth: 0,
+            }}>
+              {c.label} <span style={{ fontWeight: 400, fontSize: 11, opacity: 0.7 }}>· {c.sub}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 30 }}>
+        <div style={{ padding: `0 ${t.space.screen}px` }}>
+          <div style={{
+            background: t.colors.surfaceAlt, borderRadius: t.radius.card,
+            border: `0.5px solid ${t.colors.border}`, overflow: 'hidden',
+          }}>
+            {list.map((m, i) => {
+              const c = counts[m.key] || { count: 0, last: '' };
+              return (
+                <button key={m.key} onClick={() => nav.push('movement-detail', { key: m.key })} style={{
+                  width: '100%', textAlign: 'left', background: 'transparent',
+                  border: 'none', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '14px 14px', gap: 10,
+                  borderBottom: i < list.length - 1 ? `0.5px solid ${t.colors.border}` : 'none',
+                  fontFamily: t.font.sans,
+                }}>
+                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <MovementName en={m.en} ko={m.ko} size={15} weight={600} />
+                    <div style={{
+                      fontSize: 12, color: t.colors.textMuted, letterSpacing: -0.1,
+                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                    }}>
+                      {c.count > 0 ? `${c.count}건 · 마지막 ${formatRelative(c.last)}` : '기록 없음'}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                    {c.count > 0 && (
+                      <div style={{
+                        fontFamily: t.font.serif, fontSize: 22, fontWeight: 700,
+                        color: t.colors.primaryDeep, lineHeight: 1,
+                        fontVariantNumeric: 'tabular-nums',
+                      }}>{c.count}</div>
+                    )}
+                    <Icon name="chevron" size={14} color={t.colors.textMuted} />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Keyword clustering ───────────────────────────────────────
+const KR_PARTICLES = /(은|는|이|가|을|를|에서|에게|에|의|도|만|과|와|으로|로|라고|라는|라|이라|까지|부터|보다|처럼|마다|조차|이나|나|이며|며|이고|고|지만|이지만|한테|께|께서|씨|님)$/;
+const REJECT_SUFFIX = /(하기|되기|시기|지기|기기|히|게|서|며|면서|면|다|자|구나|네|잖|해짐|됨|함|님)$/;
+const VERB_NOUNS = new Set([
+  '쓰기','하기','되기','보기','가기','오기','먹기','듣기','말기','두기','놓기','쥐기','잡기',
+  '서기','앉기','눕기','열기','닫기','밀기','풀기','숙이기','펴기','접기','돌기','내리기','올리기',
+  '뜨기','감기','빼기','넣기','찍기','맞추기','잡아두기','느끼기','생각하기','유지하기','말하기',
+  '바라보기','당기기','돌리기','낮추기','높이기','받치기','움직이기','벌리기','조이기','푸시기',
+  '안기','차기','때기','떼기','빠지기','돌아오기','이기',
+]);
+const STOPWORDS = new Set([
+  '그리고','하지만','그런데','그래서','또는','또한','즉','다만','물론',
+  '그때','지금','오늘','내일','어제','다음','이번','저번','처음','마지막','나중','동안','사이',
+  '조금','많이','좀','너무','정말','진짜','아직','계속','자꾸','바로','다시','같이','함께',
+  '가장','제일','더욱','훨씬','매우','꽤','약간','거의','완전','살짝','확실','성급',
+  '그것','이것','저것','여기','저기','거기','이쪽','저쪽','그쪽','모든','몇','것','때','곳','수','점',
+  '그','이','저','누구','무엇','어디','어떤','어느',
+  '앞','뒤','위','아래','옆','안','밖','쪽','중간','사이','옆면','윗면','아랫면',
+  '앞으로','뒤로','위로','아래로','옆으로','안으로','밖으로',
+  '필요','가능','불가','정도','만큼','때문','덕분','까지','부터',
+  '우선','먼저','다음에','이후','이전','전에','후에',
+  '시작','끝','유지','적응','준비','진행','확인','개선','반복','연습',
+]);
+
+function extractKeywords(s) {
+  if (!s) return [];
+  const raw = s.split(/[^가-힯ㄱ-ㆎa-zA-Z0-9]+/).filter(Boolean);
+  const out = new Set();
+  for (const tok of raw) {
+    let w = tok;
+    const p = w.match(KR_PARTICLES);
+    if (p && w.length - p[0].length >= 2) w = w.slice(0, w.length - p[0].length);
+    if (VERB_NOUNS.has(w)) continue;
+    if (REJECT_SUFFIX.test(w)) continue;
+    if (w.length <= 3 && w.endsWith('기')) continue;
+    if (/^[0-9]+$/.test(w)) continue;
+    if (w.length < 2) continue;
+    if (STOPWORDS.has(w)) continue;
+    out.add(w);
+  }
+  return [...out];
+}
+
+function clusterComments(comments) {
+  if (!comments.length) return [];
+  const tokens = comments.map(extractKeywords);
+  const df = new Map();
+  tokens.forEach(toks => toks.forEach(k => df.set(k, (df.get(k) || 0) + 1)));
+  const assign = comments.map((_, i) => {
+    const toks = tokens[i];
+    let best = null;
+    for (const k of toks) {
+      const d = df.get(k) || 0;
+      if (d < 2) continue;
+      if (!best || d > best.d || (d === best.d && k.length > best.k.length) || (d === best.d && k.length === best.k.length && k < best.k)) {
+        best = { k, d };
+      }
+    }
+    return best ? best.k : null;
+  });
+  const groups = new Map();
+  comments.forEach((c, i) => {
+    const key = assign[i] || '__other__';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(c);
+  });
+  const out = [];
+  const other = groups.get('__other__');
+  groups.delete('__other__');
+  [...groups.entries()]
+    .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
+    .forEach(([k, arr]) => out.push({ label: k, items: arr }));
+  if (other?.length) out.push({ label: '기타', items: other, isOther: true });
+  return out;
+}
+
+// ═════════ S6. Movement History ═══════════════════════════════
+function MovementDetailScreen({ store, nav, params }) {
+  const t = window.theme;
+  const mv = [...window.MOVEMENTS.barre, ...window.MOVEMENTS.center, ...window.MOVEMENTS.misc].find(m => m.key === params.key);
+
+  const allComments = useMemo(() => {
+    const out = [];
+    store.sessions
+      .slice()
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .forEach(s => {
+        const arr = s.notes?.[params.key];
+        if (Array.isArray(arr)) arr.forEach(c => out.push(c));
+      });
+    return out;
+  }, [store.sessions, params.key]);
+
+  const clusters = useMemo(() => clusterComments(allComments), [allComments]);
+  const total = allComments.length;
+
+  return (
+    <>
+      <ScreenHeader title={mv?.en || ''} subtitle={`${mv?.ko} · 누적 ${total}건`} onBack={() => nav.back()} />
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 30 }}>
+        <div style={{ padding: `8px ${t.space.screen}px 0` }}>
+          {clusters.length === 0 ? (
+            <EmptyState title="아직 기록이 없습니다" subtitle="이 동작에 대한 메모가 쌓이면 키워드별로 묶어드려요." />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {clusters.map(cl => (
+                <div key={cl.label} style={{
+                  background: t.colors.surfaceAlt, borderRadius: t.radius.card,
+                  border: `0.5px solid ${t.colors.border}`, padding: '14px 16px',
+                  display: 'flex', flexDirection: 'column', gap: 10,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                    <span style={{
+                      fontFamily: t.font.serif, fontSize: 16, fontWeight: 600,
+                      color: cl.isOther ? t.colors.textSecondary : t.colors.primaryDeep,
+                      letterSpacing: -0.2,
+                      fontStyle: cl.isOther ? 'italic' : 'normal',
+                    }}>{cl.label}</span>
+                    <span style={{
+                      fontSize: 11, color: t.colors.textMuted, fontWeight: 500,
+                      letterSpacing: 0.3, fontVariantNumeric: 'tabular-nums',
+                    }}>{cl.items.length}건</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {cl.items.map((c, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                        <span style={{
+                          flexShrink: 0, color: t.colors.primaryDeep,
+                          fontSize: 14, fontWeight: 600, lineHeight: 1.55,
+                        }}>·</span>
+                        <span style={{
+                          flex: 1, fontSize: 14.5, lineHeight: 1.55,
+                          color: t.colors.textPrimary, whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-word', letterSpacing: -0.1,
+                        }}>{c}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ═════════ S7. Settings ═══════════════════════════════════════
+function SettingsScreen({ store, nav }) {
+  const t = window.theme;
+  const rows = [
+    { icon: 'studio',  label: '학원 관리',    count: store.studios.length },
+    { icon: 'teacher', label: '선생님 관리',  count: store.teachers.length },
+    { icon: 'level',   label: '레벨 관리',    count: store.levels.length },
+  ];
+  return (
+    <>
+      <ScreenHeader title="설정" subtitle="한 번 등록하면 계속 재사용" />
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 30 }}>
+        <div style={{ padding: `8px ${t.space.screen}px 0` }}>
+          <SectionLabel style={{ marginTop: 8 }}>마스터 데이터</SectionLabel>
+          <div style={{
+            background: t.colors.surfaceAlt, borderRadius: t.radius.card,
+            border: `0.5px solid ${t.colors.border}`, overflow: 'hidden',
+          }}>
+            {rows.map((r, i) => (
+              <button key={r.label} style={{
+                width: '100%', textAlign: 'left', background: 'transparent', border: 'none',
+                cursor: 'pointer', padding: '14px 16px',
+                borderBottom: i < rows.length - 1 ? `0.5px solid ${t.colors.border}` : 'none',
+                display: 'flex', alignItems: 'center', gap: 12, fontFamily: t.font.sans,
+              }}>
+                <div style={{
+                  width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                  background: t.colors.surface,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Icon name={r.icon} size={17} color={t.colors.primaryDeep} />
+                </div>
+                <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: t.colors.textPrimary, whiteSpace: 'nowrap' }}>{r.label}</span>
+                <span style={{ fontSize: 13, color: t.colors.textMuted, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{r.count}</span>
+                <div style={{ flexShrink: 0, display: 'flex' }}><Icon name="chevron" size={14} color={t.colors.textMuted} /></div>
+              </button>
+            ))}
+          </div>
+
+          <SectionLabel style={{ marginTop: 24 }}>등록된 학원</SectionLabel>
+          <div style={{
+            background: t.colors.surfaceAlt, borderRadius: t.radius.card,
+            border: `0.5px solid ${t.colors.border}`, overflow: 'hidden',
+          }}>
+            {store.studios.map((s, i) => {
+              const teacherCount = store.teachers.filter(x => x.studioId === s.id).length;
+              return (
+                <div key={s.id} style={{
+                  padding: '12px 16px',
+                  borderBottom: i < store.studios.length - 1 ? `0.5px solid ${t.colors.border}` : 'none',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <span style={{
+                      fontFamily: t.font.serif, fontSize: 15, fontWeight: 600,
+                      color: t.colors.textPrimary, letterSpacing: -0.2,
+                    }}>{s.name}</span>
+                    <span style={{ fontSize: 12, color: t.colors.textMuted }}>
+                      {s.memo ? s.memo + ' · ' : ''}선생님 {teacherCount}명
+                    </span>
+                  </div>
+                  <Icon name="chevron" size={14} color={t.colors.textMuted} />
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{ marginTop: 28, textAlign: 'center' }}>
+            <div style={{
+              fontFamily: t.font.serif, fontStyle: 'italic',
+              fontSize: 17, color: t.colors.primaryDeep, letterSpacing: -0.2,
+            }}>Développé</div>
+            <div style={{ fontSize: 11, color: t.colors.textMuted, marginTop: 4 }}>v1.0 · 데블로페</div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+Object.assign(window, {
+  HomeScreen, NewClassScreen, ClassDetailScreen,
+  FeedbackNewScreen, MovementsScreen, MovementDetailScreen,
+  SettingsScreen, ClassCard, FeedbackItem,
+});
+</script>
+
+<!-- ─── App ──────────────────────────────────────────────────── -->
+<script type="text/babel">
+const { useState: _useState, useEffect: _useEffect } = React;
+
+function App() {
+  const [stack, setStack] = _useState([{ screen: 'home', params: {} }]);
+  const [tab, setTab] = _useState('home');
+
+  const [sessions, setSessions] = _useState(window.SEED_SESSIONS);
+  const [feedback, setFeedback] = _useState(window.SEED_FEEDBACK);
+  const [studios] = _useState(window.SEED_STUDIOS);
+  const [teachers] = _useState(window.SEED_TEACHERS);
+  const [levels] = _useState(window.SEED_LEVELS);
+
+  const store = {
+    sessions, feedback, studios, teachers, levels,
+    createSession(data) {
+      const id = Math.max(0, ...sessions.map(s => s.id)) + 1;
+      setSessions([...sessions, { id, ...data }]);
+      return id;
+    },
+    updateSession(id, data) {
+      setSessions(sessions.map(s => s.id === id ? { ...s, ...data } : s));
+    },
+    deleteSession(id) {
+      setSessions(sessions.filter(s => s.id !== id));
+    },
+    createFeedback(data) {
+      const id = Math.max(0, ...feedback.map(f => f.id)) + 1;
+      const now = new Date().toISOString();
+      setFeedback([...feedback, { id, createdAt: now, ...data }]);
+      return id;
+    },
+  };
+
+  const nav = {
+    push(screen, params = {}) { setStack(s => [...s, { screen, params }]); },
+    replace(screen, params = {}) { setStack(s => [...s.slice(0, -1), { screen, params }]); },
+    back() { setStack(s => s.length > 1 ? s.slice(0, -1) : s); },
+    reset(screen, params = {}) { setStack([{ screen, params }]); },
+  };
+
+  const onTab = (key) => {
+    setTab(key);
+    const screen = key === 'home' ? 'home' : key === 'movements' ? 'movements' : 'settings';
+    nav.reset(screen);
+  };
+
+  _useEffect(() => {
+    try {
+      const saved = localStorage.getItem('dev-stack');
+      if (saved) { const s = JSON.parse(saved); if (Array.isArray(s) && s.length) setStack(s); }
+      const savedTab = localStorage.getItem('dev-tab');
+      if (savedTab) setTab(savedTab);
+    } catch(e){}
+  }, []);
+  _useEffect(() => {
+    try {
+      localStorage.setItem('dev-stack', JSON.stringify(stack));
+      localStorage.setItem('dev-tab', tab);
+    } catch(e){}
+  }, [stack, tab]);
+
+  const top = stack[stack.length - 1];
+  const isModal = ['class-new', 'feedback-new'].includes(top.screen);
+
+  const renderScreen = () => {
+    const props = { store, nav, params: top.params };
+    switch (top.screen) {
+      case 'home':            return <HomeScreen {...props} />;
+      case 'class-new':       return <NewClassScreen {...props} />;
+      case 'class-detail':    return <ClassDetailScreen {...props} />;
+      case 'feedback-new':    return <FeedbackNewScreen {...props} />;
+      case 'movements':       return <MovementsScreen {...props} />;
+      case 'movement-detail': return <MovementDetailScreen {...props} />;
+      case 'settings':        return <SettingsScreen {...props} />;
+      default:                return <HomeScreen {...props} />;
+    }
+  };
+
+  _useEffect(() => {
+    const msgListener = (e) => {
+      if (!e.data || typeof e.data !== 'object') return;
+      if (e.data.type === '__activate_edit_mode') {
+        document.getElementById('tweaks').classList.add('open');
+      } else if (e.data.type === '__deactivate_edit_mode') {
+        document.getElementById('tweaks').classList.remove('open');
+      }
+    };
+    window.addEventListener('message', msgListener);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+
+    const jump = document.getElementById('jumpGrid');
+    const screens = [
+      ['home', '홈'], ['class-new', '수업 생성'], ['class-detail', '수업 상세'],
+      ['feedback-new', '피드백 추가'], ['movements', '동작'], ['movement-detail', '동작 히스토리'],
+      ['settings', '설정'],
+    ];
+    jump.innerHTML = '';
+    screens.forEach(([s, label]) => {
+      const b = document.createElement('button');
+      b.textContent = label;
+      b.onclick = () => {
+        const params = s === 'class-detail' ? { id: 1 }
+                    : s === 'movement-detail' ? { key: 'pirouette' }
+                    : s === 'feedback-new' ? { sessionId: 1 }
+                    : {};
+        setStack([{ screen: s, params }]);
+      };
+      jump.appendChild(b);
+    });
+
+    return () => window.removeEventListener('message', msgListener);
+  }, []);
+
+  return (
+    <div className="stage" data-screen-label={`Développé · ${top.screen}`}>
+      <PhoneShell>
+        <div style={{
+          flex: 1, display: 'flex', flexDirection: 'column',
+          overflow: 'hidden', position: 'relative',
+          ...(IS_MOBILE && { height: '100%' }),
+        }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}
+               key={stack.length + '-' + top.screen}>
+            {renderScreen()}
+          </div>
+          {!isModal && <TabBar current={tab} onChange={onTab} />}
+          {tab === 'home' && !isModal && (
+            <FAB icon="plus" label="수업 기록" onClick={() => nav.push('class-new')} />
+          )}
+        </div>
+      </PhoneShell>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
