@@ -2549,10 +2549,9 @@ function App() {
       <PhoneShell>
         <div style={{
           flex: 1, display: 'flex', flexDirection: 'column',
-          overflow: 'hidden', position: 'relative',
-          ...(IS_MOBILE && { height: '100%' }),
+          position: 'relative', minHeight: 0,
         }}>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', minHeight: 0 }}
                key={stack.length + '-' + top.screen}>
             {renderScreen()}
           </div>
