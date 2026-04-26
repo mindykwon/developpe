@@ -453,7 +453,7 @@ function ScreenHeader({ title, subtitle, onBack, rightAction, large = true }) {
   const t = window.theme;
   return (
     <div style={{ padding: `${large ? 4 : 6}px ${t.space.screen}px 4px`, flexShrink: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 44 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 36 }}>
         {onBack ? (
           <button onClick={onBack} style={{
             display: 'flex', alignItems: 'center', gap: 2, padding: '6px 6px 6px 0',
@@ -556,10 +556,10 @@ function TabBar({ current, onChange, action }) {
   return (
     <div style={{
       flexShrink: 0, borderTop: `0.5px solid ${t.colors.border}`,
-      background: 'rgba(253,246,243,0.92)',
+      background: 'rgba(253,246,243,0.88)',
       backdropFilter: 'blur(20px) saturate(180%)',
       WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-      paddingTop: 10, paddingLeft: 0, paddingRight: 0,
+      paddingTop: 6, paddingLeft: 0, paddingRight: 0,
       paddingBottom: IS_MOBILE ? 'max(20px, env(safe-area-inset-bottom))' : 22,
       display: 'flex', alignItems: 'flex-start',
       ...(IS_MOBILE && {
@@ -2625,10 +2625,10 @@ function App() {
       <PhoneShell>
         <div style={{
           flex: 1, display: 'flex', flexDirection: 'column',
-          position: 'relative', minHeight: 0,
+          overflow: 'hidden', position: 'relative',
         }}>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', minHeight: 0,
-                       ...(IS_MOBILE && !isModal && { paddingBottom: 'max(78px, calc(58px + env(safe-area-inset-bottom)))' }) }}
+                       ...(IS_MOBILE && !isModal && { paddingBottom: 'max(74px, calc(54px + env(safe-area-inset-bottom)))' }) }}
                key={stack.length + '-' + top.screen}>
             {renderScreen()}
           </div>
