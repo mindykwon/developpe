@@ -974,7 +974,6 @@ function NewClassScreen({ store, nav, params }) {
   const [section, setSection] = useState('barre');
 
   const studioTeachers = studioId ? store.teachers.filter(tc => tc.studioId === studioId) : store.teachers;
-  const showTeacherRow = !studioId || studioTeachers.length > 1;
   const showLevelRow = store.levels.length > 1;
 
   const studioInitialized = useRef(false);
@@ -1027,22 +1026,20 @@ function NewClassScreen({ store, nav, params }) {
             <FormRow label="날짜" icon="calendar">
               <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputStyle(t)} />
             </FormRow>
-            <FormRow label="학원" icon="studio" last={!showTeacherRow && !showLevelRow}>
+            <FormRow label="학원" icon="studio">
               <SelectOrCreate
                 options={store.studios.map(s => ({ value: s.id, label: s.name }))}
                 value={studioId} onChange={setStudioId}
                 placeholder="선택 또는 추가"
               />
             </FormRow>
-            {showTeacherRow && (
-              <FormRow label="선생님" icon="teacher" last={!showLevelRow}>
-                <SelectOrCreate
-                  options={studioTeachers.map(x => ({ value: x.id, label: x.name, sub: !studioId ? store.studios.find(s => s.id === x.studioId)?.name : undefined }))}
-                  value={teacherId} onChange={setTeacherId}
-                  placeholder="선택 또는 추가"
-                />
-              </FormRow>
-            )}
+            <FormRow label="선생님" icon="teacher" last={!showLevelRow}>
+              <SelectOrCreate
+                options={studioTeachers.map(x => ({ value: x.id, label: x.name, sub: !studioId ? store.studios.find(s => s.id === x.studioId)?.name : undefined }))}
+                value={teacherId} onChange={setTeacherId}
+                placeholder="선택 또는 추가"
+              />
+            </FormRow>
             {showLevelRow && (
               <FormRow label="레벨" icon="level" last>
                 <SelectOrCreate
