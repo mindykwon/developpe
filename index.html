@@ -1005,7 +1005,7 @@ function NewClassScreen({ store, nav, params }) {
           fontFamily: t.font.sans, whiteSpace: 'nowrap', flexShrink: 0,
         }}>저장</button>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 24 }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: IS_MOBILE ? 120 : 40 }}>
         <div style={{ padding: `16px ${t.space.screen}px` }}>
           <FormCard>
             <FormRow label="날짜" icon="calendar">
