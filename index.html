@@ -44,12 +44,9 @@
   }
   /* ── 모바일: 전체화면 앱 ── */
   @media (max-width: 500px) {
-    html, body { height: 100%; overflow: hidden; background: #FDF6F3; }
-    #root { position: fixed; inset: 0; overflow: hidden; }
-    .stage {
-      padding: 0; width: 100%; height: 100%;
-      display: block; background: #FDF6F3;
-    }
+    html, body { margin: 0; padding: 0; overflow: hidden; background: #FDF6F3; }
+    #root { position: fixed; inset: 0; display: flex; flex-direction: column; }
+    .stage { flex: 1; display: flex; flex-direction: column; padding: 0; background: #FDF6F3; }
     .brand-watermark, .brand-sub, #tweaks { display: none !important; }
   }
   .tweaks {
@@ -369,7 +366,7 @@ function PhoneShell({ children, dark = false }) {
   if (IS_MOBILE) {
     return (
       <div style={{
-        width: '100%', height: '100%',
+        flex: 1, width: '100%',
         display: 'flex', flexDirection: 'column',
         background: bg,
         fontFamily: window.theme.font.sans,
