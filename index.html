@@ -1091,7 +1091,7 @@ function FlowList({ movements, notes, onChange }) {
   return (
     <div style={{
       background: t.colors.surfaceAlt, borderRadius: t.radius.card,
-      border: `0.5px solid ${t.colors.border}`, overflow: 'hidden',
+      border: `0.5px solid ${t.colors.border}`,
     }}>
       {movements.map((m, i) => (
         <FlowRow
@@ -1126,7 +1126,7 @@ function FlowRow({ movement: m, index: i, isLast, comments, onChange }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'flex-start', gap: 10,
-      padding: '12px 14px',
+      padding: isLast ? '12px 14px 16px' : '12px 14px',
       borderBottom: isLast ? 'none' : `0.5px solid ${t.colors.border}`,
     }}>
       <div style={{
