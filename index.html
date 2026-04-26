@@ -1925,9 +1925,9 @@ function MovementDetailScreen({ store, nav, params }) {
 function SettingsScreen({ store, nav }) {
   const t = window.theme;
   const rows = [
-    { icon: 'studio',  label: '학원 관리',    count: store.studios.length },
-    { icon: 'teacher', label: '선생님 관리',  count: store.teachers.length },
-    { icon: 'level',   label: '레벨 관리',    count: store.levels.length },
+    { icon: 'studio',  label: '학원 관리',   count: store.studios.length,  screen: 'studio-manager' },
+    { icon: 'teacher', label: '선생님 관리', count: store.teachers.length, screen: 'teacher-manager' },
+    { icon: 'level',   label: '레벨 관리',   count: store.levels.length,   screen: 'level-manager' },
   ];
   return (
     <>
@@ -1940,7 +1940,7 @@ function SettingsScreen({ store, nav }) {
             border: `0.5px solid ${t.colors.border}`, overflow: 'hidden',
           }}>
             {rows.map((r, i) => (
-              <button key={r.label} style={{
+              <button key={r.label} onClick={() => nav.push(r.screen)} style={{
                 width: '100%', textAlign: 'left', background: 'transparent', border: 'none',
                 cursor: 'pointer', padding: '14px 16px',
                 borderBottom: i < rows.length - 1 ? `0.5px solid ${t.colors.border}` : 'none',
@@ -1953,48 +1953,291 @@ function SettingsScreen({ store, nav }) {
                 }}>
                   <Icon name={r.icon} size={17} color={t.colors.primaryDeep} />
                 </div>
-                <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: t.colors.textPrimary, whiteSpace: 'nowrap' }}>{r.label}</span>
+                <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: t.colors.textPrimary }}>{r.label}</span>
                 <span style={{ fontSize: 13, color: t.colors.textMuted, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{r.count}</span>
                 <div style={{ flexShrink: 0, display: 'flex' }}><Icon name="chevron" size={14} color={t.colors.textMuted} /></div>
               </button>
             ))}
           </div>
 
-          <SectionLabel style={{ marginTop: 24 }}>등록된 학원</SectionLabel>
-          <div style={{
-            background: t.colors.surfaceAlt, borderRadius: t.radius.card,
-            border: `0.5px solid ${t.colors.border}`, overflow: 'hidden',
-          }}>
+          <div style={{ marginTop: 28, textAlign: 'center' }}>
+            <div style={{ fontFamily: t.font.serif, fontStyle: 'italic', fontSize: 17, color: t.colors.primaryDeep, letterSpacing: -0.2 }}>Développé</div>
+            <div style={{ fontSize: 11, color: t.colors.textMuted, marginTop: 4 }}>v1.0 · 데블로페</div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── 공통 헬퍼 스타일 ─────────────────────────────────────────
+function mgmtInputStyle(t) {
+  return {
+    width: '100%', border: 'none', outline: 'none', background: 'transparent',
+    fontFamily: t.font.sans, fontSize: 15, color: t.colors.textPrimary, padding: 0,
+  };
+}
+function MgmtSaveBtn({ onClick }) {
+  const t = window.theme;
+  return (
+    <button onClick={onClick} style={{
+      background: t.colors.primaryDeep, color: '#fff', border: 'none',
+      borderRadius: 8, padding: '6px 14px', cursor: 'pointer',
+      fontFamily: t.font.sans, fontSize: 13, fontWeight: 600,
+    }}>저장</button>
+  );
+}
+function MgmtCancelBtn({ onClick }) {
+  const t = window.theme;
+  return (
+    <button onClick={onClick} style={{
+      background: 'transparent', color: t.colors.textMuted, border: 'none',
+      borderRadius: 8, padding: '6px 10px', cursor: 'pointer',
+      fontFamily: t.font.sans, fontSize: 13,
+    }}>취소</button>
+  );
+}
+
+// ─── 학원 관리 ────────────────────────────────────────────────
+function StudioManagerScreen({ store, nav }) {
+  const t = window.theme;
+  const [editId, setEditId] = useState(null);
+  const [form, setForm] = useState({ name: '', memo: '' });
+  const [deleteId, setDeleteId] = useState(null);
+
+  const startEdit = (s) => { setDeleteId(null); setEditId(s.id); setForm({ name: s.name, memo: s.memo || '' }); };
+  const startNew  = () => { setDeleteId(null); setEditId('new'); setForm({ name: '', memo: '' }); };
+  const cancel    = () => setEditId(null);
+  const save = () => {
+    if (!form.name.trim()) return;
+    if (editId === 'new') store.createStudio({ name: form.name.trim(), memo: form.memo.trim() });
+    else store.updateStudio(editId, { name: form.name.trim(), memo: form.memo.trim() });
+    setEditId(null);
+  };
+  const tryDelete = (id) => {
+    if (deleteId === id) { store.deleteStudio(id); setDeleteId(null); }
+    else { setEditId(null); setDeleteId(id); }
+  };
+
+  const EditForm = () => (
+    <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <input autoFocus value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+        placeholder="학원 이름" style={mgmtInputStyle(t)} />
+      <input value={form.memo} onChange={e => setForm(f => ({ ...f, memo: e.target.value }))}
+        placeholder="지역 메모 (예: 강남)" style={{ ...mgmtInputStyle(t), fontSize: 13, color: t.colors.textSecondary }} />
+      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+        <MgmtCancelBtn onClick={cancel} /><MgmtSaveBtn onClick={save} />
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      <ScreenHeader title="학원 관리" onBack={() => nav.back()} />
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 30 }}>
+        <div style={{ padding: `8px ${t.space.screen}px 0` }}>
+          <div style={{ background: t.colors.surfaceAlt, borderRadius: t.radius.card, border: `0.5px solid ${t.colors.border}`, overflow: 'hidden' }}>
             {store.studios.map((s, i) => {
-              const teacherCount = store.teachers.filter(x => x.studioId === s.id).length;
+              const isLast = i === store.studios.length - 1 && editId !== 'new';
               return (
-                <div key={s.id} style={{
-                  padding: '12px 16px',
-                  borderBottom: i < store.studios.length - 1 ? `0.5px solid ${t.colors.border}` : 'none',
-                  display: 'flex', alignItems: 'center', gap: 10,
-                }}>
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <span style={{
-                      fontFamily: t.font.serif, fontSize: 15, fontWeight: 600,
-                      color: t.colors.textPrimary, letterSpacing: -0.2,
-                    }}>{s.name}</span>
-                    <span style={{ fontSize: 12, color: t.colors.textMuted }}>
-                      {s.memo ? s.memo + ' · ' : ''}선생님 {teacherCount}명
-                    </span>
-                  </div>
-                  <Icon name="chevron" size={14} color={t.colors.textMuted} />
+                <div key={s.id} style={{ borderBottom: isLast ? 'none' : `0.5px solid ${t.colors.border}` }}>
+                  {editId === s.id ? <EditForm /> : (
+                    <div style={{ padding: '14px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 15, fontWeight: 500, color: t.colors.textPrimary }}>{s.name}</div>
+                        {s.memo && <div style={{ fontSize: 12, color: t.colors.textMuted, marginTop: 2 }}>{s.memo}</div>}
+                      </div>
+                      {deleteId === s.id ? (
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                          <MgmtCancelBtn onClick={() => setDeleteId(null)} />
+                          <button onClick={() => tryDelete(s.id)} style={{ background: t.colors.danger, color: '#fff', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontFamily: t.font.sans, fontSize: 13, fontWeight: 600 }}>삭제</button>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          <button onClick={() => startEdit(s)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, color: t.colors.textMuted }}><Icon name="edit" size={16} /></button>
+                          <button onClick={() => tryDelete(s.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, color: t.colors.textMuted }}><Icon name="trash" size={16} /></button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
+            {editId === 'new' && (
+              <div style={{ borderTop: store.studios.length ? `0.5px solid ${t.colors.border}` : 'none' }}>
+                <EditForm />
+              </div>
+            )}
           </div>
+          {editId !== 'new' && (
+            <button onClick={startNew} style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', cursor: 'pointer', color: t.colors.primaryDeep, fontFamily: t.font.sans, fontSize: 15, fontWeight: 500, padding: '8px 4px' }}>
+              <Icon name="plus" size={16} color={t.colors.primaryDeep} /> 학원 추가
+            </button>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
 
-          <div style={{ marginTop: 28, textAlign: 'center' }}>
-            <div style={{
-              fontFamily: t.font.serif, fontStyle: 'italic',
-              fontSize: 17, color: t.colors.primaryDeep, letterSpacing: -0.2,
-            }}>Développé</div>
-            <div style={{ fontSize: 11, color: t.colors.textMuted, marginTop: 4 }}>v1.0 · 데블로페</div>
+// ─── 선생님 관리 ──────────────────────────────────────────────
+function TeacherManagerScreen({ store, nav }) {
+  const t = window.theme;
+  const [editId, setEditId] = useState(null);
+  const [form, setForm] = useState({ name: '', studioId: null });
+  const [deleteId, setDeleteId] = useState(null);
+
+  const startEdit = (tc) => { setDeleteId(null); setEditId(tc.id); setForm({ name: tc.name, studioId: tc.studioId }); };
+  const startNew  = () => { setDeleteId(null); setEditId('new'); setForm({ name: '', studioId: null }); };
+  const cancel    = () => setEditId(null);
+  const save = () => {
+    if (!form.name.trim()) return;
+    if (editId === 'new') store.createTeacher({ name: form.name.trim(), studioId: form.studioId });
+    else store.updateTeacher(editId, { name: form.name.trim(), studioId: form.studioId });
+    setEditId(null);
+  };
+  const tryDelete = (id) => {
+    if (deleteId === id) { store.deleteTeacher(id); setDeleteId(null); }
+    else { setEditId(null); setDeleteId(id); }
+  };
+
+  const EditForm = () => (
+    <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <input autoFocus value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+        placeholder="선생님 이름" style={mgmtInputStyle(t)} />
+      <select value={form.studioId ?? ''} onChange={e => setForm(f => ({ ...f, studioId: e.target.value ? Number(e.target.value) : null }))}
+        style={{ ...mgmtInputStyle(t), fontSize: 13, color: form.studioId ? t.colors.textPrimary : t.colors.textMuted }}>
+        <option value="">학원 선택 (선택사항)</option>
+        {store.studios.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+      </select>
+      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+        <MgmtCancelBtn onClick={cancel} /><MgmtSaveBtn onClick={save} />
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      <ScreenHeader title="선생님 관리" onBack={() => nav.back()} />
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 30 }}>
+        <div style={{ padding: `8px ${t.space.screen}px 0` }}>
+          <div style={{ background: t.colors.surfaceAlt, borderRadius: t.radius.card, border: `0.5px solid ${t.colors.border}`, overflow: 'hidden' }}>
+            {store.teachers.map((tc, i) => {
+              const studio = store.studios.find(s => s.id === tc.studioId);
+              const isLast = i === store.teachers.length - 1 && editId !== 'new';
+              return (
+                <div key={tc.id} style={{ borderBottom: isLast ? 'none' : `0.5px solid ${t.colors.border}` }}>
+                  {editId === tc.id ? <EditForm /> : (
+                    <div style={{ padding: '14px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 15, fontWeight: 500, color: t.colors.textPrimary }}>{tc.name}</div>
+                        {studio && <div style={{ fontSize: 12, color: t.colors.textMuted, marginTop: 2 }}>{studio.name}</div>}
+                      </div>
+                      {deleteId === tc.id ? (
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                          <MgmtCancelBtn onClick={() => setDeleteId(null)} />
+                          <button onClick={() => tryDelete(tc.id)} style={{ background: t.colors.danger, color: '#fff', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontFamily: t.font.sans, fontSize: 13, fontWeight: 600 }}>삭제</button>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          <button onClick={() => startEdit(tc)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, color: t.colors.textMuted }}><Icon name="edit" size={16} /></button>
+                          <button onClick={() => tryDelete(tc.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, color: t.colors.textMuted }}><Icon name="trash" size={16} /></button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {editId === 'new' && (
+              <div style={{ borderTop: store.teachers.length ? `0.5px solid ${t.colors.border}` : 'none' }}>
+                <EditForm />
+              </div>
+            )}
           </div>
+          {editId !== 'new' && (
+            <button onClick={startNew} style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', cursor: 'pointer', color: t.colors.primaryDeep, fontFamily: t.font.sans, fontSize: 15, fontWeight: 500, padding: '8px 4px' }}>
+              <Icon name="plus" size={16} color={t.colors.primaryDeep} /> 선생님 추가
+            </button>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── 레벨 관리 ────────────────────────────────────────────────
+function LevelManagerScreen({ store, nav }) {
+  const t = window.theme;
+  const [editId, setEditId] = useState(null);
+  const [form, setForm] = useState({ name: '' });
+  const [deleteId, setDeleteId] = useState(null);
+
+  const startEdit = (l) => { setDeleteId(null); setEditId(l.id); setForm({ name: l.name }); };
+  const startNew  = () => { setDeleteId(null); setEditId('new'); setForm({ name: '' }); };
+  const cancel    = () => setEditId(null);
+  const save = () => {
+    if (!form.name.trim()) return;
+    if (editId === 'new') store.createLevel({ name: form.name.trim(), order: store.levels.length + 1 });
+    else store.updateLevel(editId, { name: form.name.trim() });
+    setEditId(null);
+  };
+  const tryDelete = (id) => {
+    if (deleteId === id) { store.deleteLevel(id); setDeleteId(null); }
+    else { setEditId(null); setDeleteId(id); }
+  };
+
+  const EditForm = () => (
+    <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <input autoFocus value={form.name} onChange={e => setForm({ name: e.target.value })}
+        onKeyDown={e => e.key === 'Enter' && save()}
+        placeholder="레벨 이름 (예: Intermediate)" style={mgmtInputStyle(t)} />
+      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+        <MgmtCancelBtn onClick={cancel} /><MgmtSaveBtn onClick={save} />
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      <ScreenHeader title="레벨 관리" onBack={() => nav.back()} />
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 30 }}>
+        <div style={{ padding: `8px ${t.space.screen}px 0` }}>
+          <div style={{ background: t.colors.surfaceAlt, borderRadius: t.radius.card, border: `0.5px solid ${t.colors.border}`, overflow: 'hidden' }}>
+            {store.levels.map((l, i) => {
+              const isLast = i === store.levels.length - 1 && editId !== 'new';
+              return (
+                <div key={l.id} style={{ borderBottom: isLast ? 'none' : `0.5px solid ${t.colors.border}` }}>
+                  {editId === l.id ? <EditForm /> : (
+                    <div style={{ padding: '14px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ flex: 1, fontSize: 15, fontWeight: 500, color: t.colors.textPrimary }}>{l.name}</div>
+                      {deleteId === l.id ? (
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                          <MgmtCancelBtn onClick={() => setDeleteId(null)} />
+                          <button onClick={() => tryDelete(l.id)} style={{ background: t.colors.danger, color: '#fff', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontFamily: t.font.sans, fontSize: 13, fontWeight: 600 }}>삭제</button>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          <button onClick={() => startEdit(l)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, color: t.colors.textMuted }}><Icon name="edit" size={16} /></button>
+                          <button onClick={() => tryDelete(l.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, color: t.colors.textMuted }}><Icon name="trash" size={16} /></button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {editId === 'new' && (
+              <div style={{ borderTop: store.levels.length ? `0.5px solid ${t.colors.border}` : 'none' }}>
+                <EditForm />
+              </div>
+            )}
+          </div>
+          {editId !== 'new' && (
+            <button onClick={startNew} style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', cursor: 'pointer', color: t.colors.primaryDeep, fontFamily: t.font.sans, fontSize: 15, fontWeight: 500, padding: '8px 4px' }}>
+              <Icon name="plus" size={16} color={t.colors.primaryDeep} /> 레벨 추가
+            </button>
+          )}
         </div>
       </div>
     </>
@@ -2004,7 +2247,8 @@ function SettingsScreen({ store, nav }) {
 Object.assign(window, {
   HomeScreen, NewClassScreen, ClassDetailScreen,
   FeedbackNewScreen, MovementsScreen, MovementDetailScreen,
-  SettingsScreen, ClassCard, FeedbackItem,
+  SettingsScreen, StudioManagerScreen, TeacherManagerScreen, LevelManagerScreen,
+  ClassCard, FeedbackItem,
 });
 </script>
 
@@ -2018,9 +2262,9 @@ function App() {
 
   const [sessions, setSessions] = _useState(window.SEED_SESSIONS);
   const [feedback, setFeedback] = _useState(window.SEED_FEEDBACK);
-  const [studios] = _useState(window.SEED_STUDIOS);
-  const [teachers] = _useState(window.SEED_TEACHERS);
-  const [levels] = _useState(window.SEED_LEVELS);
+  const [studios, setStudios] = _useState(window.SEED_STUDIOS);
+  const [teachers, setTeachers] = _useState(window.SEED_TEACHERS);
+  const [levels, setLevels] = _useState(window.SEED_LEVELS);
 
   const store = {
     sessions, feedback, studios, teachers, levels,
@@ -2040,6 +2284,36 @@ function App() {
       const now = new Date().toISOString();
       setFeedback([...feedback, { id, createdAt: now, ...data }]);
       return id;
+    },
+    createStudio(data) {
+      const id = Math.max(0, ...studios.map(s => s.id)) + 1;
+      setStudios([...studios, { id, ...data }]);
+    },
+    updateStudio(id, data) {
+      setStudios(studios.map(s => s.id === id ? { ...s, ...data } : s));
+    },
+    deleteStudio(id) {
+      setStudios(studios.filter(s => s.id !== id));
+    },
+    createTeacher(data) {
+      const id = Math.max(0, ...teachers.map(t => t.id)) + 1;
+      setTeachers([...teachers, { id, ...data }]);
+    },
+    updateTeacher(id, data) {
+      setTeachers(teachers.map(t => t.id === id ? { ...t, ...data } : t));
+    },
+    deleteTeacher(id) {
+      setTeachers(teachers.filter(t => t.id !== id));
+    },
+    createLevel(data) {
+      const id = Math.max(0, ...levels.map(l => l.id)) + 1;
+      setLevels([...levels, { id, ...data }]);
+    },
+    updateLevel(id, data) {
+      setLevels(levels.map(l => l.id === id ? { ...l, ...data } : l));
+    },
+    deleteLevel(id) {
+      setLevels(levels.filter(l => l.id !== id));
     },
   };
 
@@ -2081,10 +2355,13 @@ function App() {
       case 'class-new':       return <NewClassScreen {...props} />;
       case 'class-detail':    return <ClassDetailScreen {...props} />;
       case 'feedback-new':    return <FeedbackNewScreen {...props} />;
-      case 'movements':       return <MovementsScreen {...props} />;
-      case 'movement-detail': return <MovementDetailScreen {...props} />;
-      case 'settings':        return <SettingsScreen {...props} />;
-      default:                return <HomeScreen {...props} />;
+      case 'movements':         return <MovementsScreen {...props} />;
+      case 'movement-detail':   return <MovementDetailScreen {...props} />;
+      case 'settings':          return <SettingsScreen {...props} />;
+      case 'studio-manager':    return <StudioManagerScreen {...props} />;
+      case 'teacher-manager':   return <TeacherManagerScreen {...props} />;
+      case 'level-manager':     return <LevelManagerScreen {...props} />;
+      default:                  return <HomeScreen {...props} />;
     }
   };
 
