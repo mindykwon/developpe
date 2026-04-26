@@ -1694,6 +1694,16 @@ function MovementsScreen({ store, nav }) {
   const t = window.theme;
   const [cat, setCat] = useState('barre');
   const [editMode, setEditMode] = useState(false);
+  const [dragIdx, setDragIdx] = useState(null);
+  const [adding, setAdding] = useState(false);
+  const [newEn, setNewEn] = useState('');
+  const [newKo, setNewKo] = useState('');
+  const dragRef = useRef(null);
+  const storeRef = useRef(store);
+  const catRef = useRef(cat);
+  storeRef.current = store;
+  catRef.current = cat;
+
   const list = store.movements[cat];
 
   const counts = useMemo(() => {
@@ -1711,11 +1721,48 @@ function MovementsScreen({ store, nav }) {
     return m;
   }, [store.sessions]);
 
+  // 터치 드래그 이벤트를 passive:false로 등록 (스크롤 방지)
+  useEffect(() => {
+    if (!editMode) return;
+    const onMove = (e) => {
+      if (!dragRef.current) return;
+      e.preventDefault();
+      const { idx, lastY } = dragRef.current;
+      const y = e.touches[0].clientY;
+      const delta = y - lastY;
+      const THRESH = 40;
+      const currentList = storeRef.current.movements[catRef.current];
+      if (delta > THRESH && idx < currentList.length - 1) {
+        storeRef.current.moveMovement(catRef.current, idx, 1);
+        dragRef.current = { idx: idx + 1, lastY: y };
+        setDragIdx(idx + 1);
+      } else if (delta < -THRESH && idx > 0) {
+        storeRef.current.moveMovement(catRef.current, idx, -1);
+        dragRef.current = { idx: idx - 1, lastY: y };
+        setDragIdx(idx - 1);
+      }
+    };
+    const onEnd = () => { dragRef.current = null; setDragIdx(null); };
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onEnd);
+    return () => {
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+    };
+  }, [editMode]);
+
+  const handleAdd = () => {
+    if (!newEn.trim()) return;
+    const base = newEn.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'move';
+    store.addMovement(cat, { key: base + '-' + Date.now().toString(36), en: newEn.trim(), ko: newKo.trim() });
+    setNewEn(''); setNewKo(''); setAdding(false);
+  };
+
   return (
     <>
       <ScreenHeader
         title="동작"
-        subtitle={editMode ? '이름 수정 · 순서 변경' : '기록된 피드백을 동작별로'}
+        subtitle={editMode ? '핸들 드래그로 순서 변경 · 이름 수정' : '기록된 피드백을 동작별로'}
       />
       <div style={{ padding: `4px ${t.space.screen}px 14px` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1738,7 +1785,7 @@ function MovementsScreen({ store, nav }) {
               </button>
             ))}
           </div>
-          <button onClick={() => setEditMode(e => !e)} style={{
+          <button onClick={() => { setEditMode(e => !e); setAdding(false); dragRef.current = null; setDragIdx(null); }} style={{
             background: editMode ? t.colors.primaryDeep : 'transparent',
             color: editMode ? '#fff' : t.colors.primaryDeep,
             border: editMode ? 'none' : `1px solid ${t.colors.primary}`,
@@ -1751,7 +1798,7 @@ function MovementsScreen({ store, nav }) {
           </button>
         </div>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: IS_MOBILE ? 'calc(90px + env(safe-area-inset-bottom))' : 30, overscrollBehavior: 'none' }}>
+      <div style={{ flex: 1, overflowY: editMode ? 'hidden' : 'auto', paddingBottom: IS_MOBILE ? 'calc(90px + env(safe-area-inset-bottom))' : 30, overscrollBehavior: 'none' }}>
         <div style={{ padding: `0 ${t.space.screen}px` }}>
           <div style={{
             background: t.colors.surfaceAlt, borderRadius: t.radius.card,
@@ -1759,31 +1806,29 @@ function MovementsScreen({ store, nav }) {
           }}>
             {list.map((m, i) => {
               const c = counts[m.key] || { count: 0, last: '' };
-              const isLast = i === list.length - 1;
-              const borderBottom = isLast ? 'none' : `0.5px solid ${t.colors.border}`;
+              const borderBottom = `0.5px solid ${t.colors.border}`;
+              const isDragging = dragIdx === i;
 
               if (editMode) {
                 return (
                   <div key={m.key} style={{
                     display: 'flex', alignItems: 'center', gap: 8,
                     padding: '10px 14px', borderBottom,
+                    background: isDragging ? t.colors.surface : 'transparent',
+                    opacity: isDragging ? 0.7 : 1,
+                    transition: 'background 0.1s, opacity 0.1s',
+                    userSelect: 'none', WebkitUserSelect: 'none',
                   }}>
-                    {/* 순서 변경 버튼 */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1, flexShrink: 0 }}>
-                      <button onClick={() => store.moveMovement(cat, i, -1)} disabled={i === 0}
-                        style={{
-                          background: 'transparent', border: 'none', cursor: i === 0 ? 'default' : 'pointer',
-                          padding: '2px 4px', lineHeight: 1,
-                          color: i === 0 ? t.colors.border : t.colors.textMuted, fontSize: 13,
-                        }}>▲</button>
-                      <button onClick={() => store.moveMovement(cat, i, 1)} disabled={i === list.length - 1}
-                        style={{
-                          background: 'transparent', border: 'none', cursor: i === list.length - 1 ? 'default' : 'pointer',
-                          padding: '2px 4px', lineHeight: 1,
-                          color: i === list.length - 1 ? t.colors.border : t.colors.textMuted, fontSize: 13,
-                        }}>▼</button>
+                    <div
+                      onTouchStart={e => {
+                        e.stopPropagation();
+                        dragRef.current = { idx: i, lastY: e.touches[0].clientY };
+                        setDragIdx(i);
+                      }}
+                      style={{ flexShrink: 0, padding: '6px 4px', touchAction: 'none', cursor: 'grab', color: t.colors.textMuted, display: 'flex', alignItems: 'center' }}
+                    >
+                      <Icon name="drag" size={20} color={t.colors.border} />
                     </div>
-                    {/* 이름 입력 */}
                     <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
                       <input
                         value={m.en}
@@ -1791,8 +1836,7 @@ function MovementsScreen({ store, nav }) {
                         style={{
                           flex: 2, border: 'none', outline: 'none', background: t.colors.surface,
                           borderRadius: 6, padding: '5px 8px', minWidth: 0,
-                          fontFamily: t.font.serif, fontSize: 14, fontWeight: 600,
-                          color: t.colors.textPrimary,
+                          fontFamily: t.font.serif, fontSize: 14, fontWeight: 600, color: t.colors.textPrimary,
                         }}
                       />
                       <span style={{ color: t.colors.textMuted, fontSize: 12, flexShrink: 0 }}>·</span>
@@ -1802,8 +1846,7 @@ function MovementsScreen({ store, nav }) {
                         style={{
                           flex: 1, border: 'none', outline: 'none', background: t.colors.surface,
                           borderRadius: 6, padding: '5px 8px', minWidth: 0,
-                          fontFamily: t.font.sans, fontSize: 13,
-                          color: t.colors.textSecondary,
+                          fontFamily: t.font.sans, fontSize: 13, color: t.colors.textSecondary,
                         }}
                       />
                     </div>
@@ -1811,36 +1854,63 @@ function MovementsScreen({ store, nav }) {
                 );
               }
 
+              const isLast = i === list.length - 1;
               return (
                 <button key={m.key} onClick={() => nav.push('movement-detail', { key: m.key })} style={{
                   width: '100%', textAlign: 'left', background: 'transparent',
                   border: 'none', cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '14px 14px', gap: 10, borderBottom,
+                  padding: '14px 14px', gap: 10,
+                  borderBottom: isLast ? 'none' : borderBottom,
                   fontFamily: t.font.sans,
                 }}>
                   <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
                     <MovementName en={m.en} ko={m.ko} size={15} weight={600} />
-                    <div style={{
-                      fontSize: 12, color: t.colors.textMuted, letterSpacing: -0.1,
-                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                    }}>
+                    <div style={{ fontSize: 12, color: t.colors.textMuted, letterSpacing: -0.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {c.count > 0 ? `${c.count}건 · 마지막 ${formatRelative(c.last)}` : '기록 없음'}
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                     {c.count > 0 && (
-                      <div style={{
-                        fontFamily: t.font.serif, fontSize: 22, fontWeight: 700,
-                        color: t.colors.primaryDeep, lineHeight: 1,
-                        fontVariantNumeric: 'tabular-nums',
-                      }}>{c.count}</div>
+                      <div style={{ fontFamily: t.font.serif, fontSize: 22, fontWeight: 700, color: t.colors.primaryDeep, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{c.count}</div>
                     )}
                     <Icon name="chevron" size={14} color={t.colors.textMuted} />
                   </div>
                 </button>
               );
             })}
+
+            {editMode && (
+              adding ? (
+                <div style={{ padding: '12px 14px', borderTop: `0.5px solid ${t.colors.border}`, background: t.colors.surface }}>
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+                    <input autoFocus placeholder="이름 (영문)" value={newEn} onChange={e => setNewEn(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleAdd()}
+                      style={{ flex: 2, border: `1px solid ${t.colors.border}`, outline: 'none', background: t.colors.surfaceAlt, borderRadius: 6, padding: '7px 10px', minWidth: 0, fontFamily: t.font.serif, fontSize: 14, color: t.colors.textPrimary }} />
+                    <input placeholder="한글" value={newKo} onChange={e => setNewKo(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleAdd()}
+                      style={{ flex: 1, border: `1px solid ${t.colors.border}`, outline: 'none', background: t.colors.surfaceAlt, borderRadius: 6, padding: '7px 10px', minWidth: 0, fontFamily: t.font.sans, fontSize: 13, color: t.colors.textSecondary }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => { setAdding(false); setNewEn(''); setNewKo(''); }}
+                      style={{ flex: 1, padding: '8px', borderRadius: 8, border: `1px solid ${t.colors.border}`, background: 'transparent', color: t.colors.textMuted, fontFamily: t.font.sans, fontSize: 13, cursor: 'pointer' }}>취소</button>
+                    <button onClick={handleAdd}
+                      style={{ flex: 2, padding: '8px', borderRadius: 8, border: 'none', background: newEn.trim() ? t.colors.primaryDeep : t.colors.border, color: '#fff', fontFamily: t.font.sans, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>추가</button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setAdding(true)} style={{
+                  width: '100%', padding: '12px 14px', border: 'none',
+                  borderTop: `0.5px solid ${t.colors.border}`,
+                  background: 'transparent', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  color: t.colors.primaryDeep, fontFamily: t.font.sans, fontSize: 14,
+                }}>
+                  <Icon name="plus" size={18} color={t.colors.primaryDeep} />
+                  동작 추가
+                </button>
+              )
+            )}
           </div>
         </div>
       </div>
@@ -2460,6 +2530,9 @@ function App() {
         [arr[idx], arr[next]] = [arr[next], arr[idx]];
         return { ...m, [cat]: arr };
       });
+    },
+    addMovement(cat, data) {
+      setMovements(m => ({ ...m, [cat]: [...m[cat], data] }));
     },
   };
 
