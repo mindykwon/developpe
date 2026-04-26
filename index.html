@@ -453,7 +453,7 @@ function ScreenHeader({ title, subtitle, onBack, rightAction, large = true }) {
   const t = window.theme;
   return (
     <div style={{ padding: `${large ? 4 : 6}px ${t.space.screen}px 4px`, flexShrink: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 36 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 44 }}>
         {onBack ? (
           <button onClick={onBack} style={{
             display: 'flex', alignItems: 'center', gap: 2, padding: '6px 6px 6px 0',
@@ -1719,8 +1719,10 @@ function MovementsScreen({ store, nav }) {
             background: editMode ? t.colors.primaryDeep : 'transparent',
             color: editMode ? '#fff' : t.colors.primaryDeep,
             border: editMode ? 'none' : `1px solid ${t.colors.primary}`,
-            borderRadius: 8, padding: '5px 12px', cursor: 'pointer',
+            borderRadius: 8, padding: '0 12px', cursor: 'pointer',
             fontFamily: t.font.sans, fontSize: 13, fontWeight: 600,
+            height: 30, display: 'inline-flex', alignItems: 'center',
+            WebkitAppearance: 'none', appearance: 'none',
           }}>
             {editMode ? '완료' : '편집'}
           </button>
