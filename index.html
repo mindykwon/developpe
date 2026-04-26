@@ -2006,10 +2006,9 @@ function SettingsScreen({ store, nav }) {
   ];
   return (
     <>
-      <ScreenHeader title="설정" subtitle="한 번 등록하면 계속 재사용" />
+      <ScreenHeader title="설정" />
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: IS_MOBILE ? 'calc(90px + env(safe-area-inset-bottom))' : 30 }}>
         <div style={{ padding: `8px ${t.space.screen}px 0` }}>
-          <SectionLabel style={{ marginTop: 8 }}>마스터 데이터</SectionLabel>
           <div style={{
             background: t.colors.surfaceAlt, borderRadius: t.radius.card,
             border: `0.5px solid ${t.colors.border}`, overflow: 'hidden',
