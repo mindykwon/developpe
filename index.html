@@ -1799,7 +1799,7 @@ function MovementsScreen({ store, nav }) {
           </button>
         </div>
       </div>
-      <div style={{ flex: 1, overflowY: editMode ? 'hidden' : 'auto', paddingBottom: 24, overscrollBehavior: 'none' }}>
+      <div style={{ flex: 1, overflowY: editMode ? 'hidden' : 'auto', paddingBottom: IS_MOBILE ? 120 : 30, overscrollBehavior: 'none' }}>
         <div style={{ padding: `0 ${t.space.screen}px` }}>
           <div style={{
             background: t.colors.surfaceAlt, borderRadius: t.radius.card,
