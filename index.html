@@ -616,12 +616,12 @@ function EmptyState({ title, subtitle, action }) {
 
 function FAB({ onClick, icon = 'plus', label }) {
   const t = window.theme;
-  const bottomVal = IS_MOBILE
-    ? 'calc(72px + env(safe-area-inset-bottom))'
-    : 90;
   return (
     <button onClick={onClick} style={{
-      position: 'absolute', right: 20, bottom: bottomVal, zIndex: 20,
+      position: IS_MOBILE ? 'fixed' : 'absolute',
+      right: 20,
+      bottom: IS_MOBILE ? 'calc(76px + env(safe-area-inset-bottom))' : 90,
+      zIndex: 110,
       height: 56, padding: label ? '0 22px 0 18px' : 0,
       minWidth: 56, borderRadius: 28,
       background: t.colors.primaryDeep, color: '#fff',
@@ -710,7 +710,7 @@ function HomeScreen({ store, nav }) {
   return (
     <>
       <ScreenHeader title="Développé" subtitle={`${sessions.length}개의 수업 기록`} />
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 24 }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: IS_MOBILE ? 'calc(150px + env(safe-area-inset-bottom))' : 24 }}>
         <div style={{ padding: `8px ${t.space.screen}px 0` }}>
           {sorted.length === 0 ? (
             <EmptyState
@@ -1004,7 +1004,7 @@ function NewClassScreen({ store, nav, params }) {
           fontFamily: t.font.sans, whiteSpace: 'nowrap', flexShrink: 0,
         }}>저장</button>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 40 }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: IS_MOBILE ? 'calc(90px + env(safe-area-inset-bottom))' : 40 }}>
         <div style={{ padding: `16px ${t.space.screen}px` }}>
           <FormCard>
             <FormRow label="날짜" icon="calendar">
@@ -1362,7 +1362,7 @@ function ClassDetailScreen({ store, nav, params }) {
           </div>
         }
       />
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 130 }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: IS_MOBILE ? 'calc(130px + env(safe-area-inset-bottom))' : 130 }}>
         <div style={{ padding: `8px ${t.space.screen}px 0` }}>
           <div style={{
             background: t.colors.surface, borderRadius: t.radius.card,
@@ -1576,7 +1576,7 @@ function FeedbackStep1({ cat, setCat, moveKey, onPick, usedKeys }) {
           </button>
         ))}
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 30 }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: IS_MOBILE ? 'calc(90px + env(safe-area-inset-bottom))' : 30 }}>
         <div style={{ padding: `0 ${t.space.screen}px`, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           {list.map(m => {
             const used = usedKeys.has(m.key);
@@ -1618,7 +1618,7 @@ function FeedbackStep2({ moveKey, body, setBody, continuousMode, setContinuousMo
   const mv = [...window.MOVEMENTS.barre, ...window.MOVEMENTS.center].find(m => m.key === moveKey);
   const pastCount = store.feedback.filter(f => f.movementKey === moveKey).length;
   return (
-    <div style={{ flex: 1, overflowY: 'auto' }}>
+    <div style={{ flex: 1, overflowY: 'auto', paddingBottom: IS_MOBILE ? 'calc(90px + env(safe-area-inset-bottom))' : 30 }}>
       <div style={{ padding: `0 ${t.space.screen}px 20px` }}>
         <div style={{
           background: t.colors.surface, borderRadius: t.radius.card,
@@ -1751,7 +1751,7 @@ function MovementsScreen({ store, nav }) {
           </button>
         </div>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 30 }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: IS_MOBILE ? 'calc(90px + env(safe-area-inset-bottom))' : 30, overscrollBehavior: 'none' }}>
         <div style={{ padding: `0 ${t.space.screen}px` }}>
           <div style={{
             background: t.colors.surfaceAlt, borderRadius: t.radius.card,
@@ -1947,7 +1947,7 @@ function MovementDetailScreen({ store, nav, params }) {
   return (
     <>
       <ScreenHeader title={mv?.en || ''} subtitle={`${mv?.ko} · 누적 ${total}건`} onBack={() => nav.back()} />
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 30 }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: IS_MOBILE ? 'calc(90px + env(safe-area-inset-bottom))' : 30 }}>
         <div style={{ padding: `8px ${t.space.screen}px 0` }}>
           {clusters.length === 0 ? (
             <EmptyState title="아직 기록이 없습니다" subtitle="이 동작에 대한 메모가 쌓이면 키워드별로 묶어드려요." />
@@ -2007,7 +2007,7 @@ function SettingsScreen({ store, nav }) {
   return (
     <>
       <ScreenHeader title="설정" subtitle="한 번 등록하면 계속 재사용" />
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 30 }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: IS_MOBILE ? 'calc(90px + env(safe-area-inset-bottom))' : 30 }}>
         <div style={{ padding: `8px ${t.space.screen}px 0` }}>
           <SectionLabel style={{ marginTop: 8 }}>마스터 데이터</SectionLabel>
           <div style={{
@@ -2109,7 +2109,7 @@ function StudioManagerScreen({ store, nav }) {
   return (
     <>
       <ScreenHeader title="학원 관리" onBack={() => nav.back()} />
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 30 }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: IS_MOBILE ? 'calc(90px + env(safe-area-inset-bottom))' : 30 }}>
         <div style={{ padding: `8px ${t.space.screen}px 0` }}>
           <div style={{ background: t.colors.surfaceAlt, borderRadius: t.radius.card, border: `0.5px solid ${t.colors.border}`, overflow: 'hidden' }}>
             {store.studios.map((s, i) => {
@@ -2194,7 +2194,7 @@ function TeacherManagerScreen({ store, nav }) {
   return (
     <>
       <ScreenHeader title="선생님 관리" onBack={() => nav.back()} />
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 30 }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: IS_MOBILE ? 'calc(90px + env(safe-area-inset-bottom))' : 30 }}>
         <div style={{ padding: `8px ${t.space.screen}px 0` }}>
           <div style={{ background: t.colors.surfaceAlt, borderRadius: t.radius.card, border: `0.5px solid ${t.colors.border}`, overflow: 'hidden' }}>
             {store.teachers.map((tc, i) => {
@@ -2276,7 +2276,7 @@ function LevelManagerScreen({ store, nav }) {
   return (
     <>
       <ScreenHeader title="레벨 관리" onBack={() => nav.back()} />
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 30 }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: IS_MOBILE ? 'calc(90px + env(safe-area-inset-bottom))' : 30 }}>
         <div style={{ padding: `8px ${t.space.screen}px 0` }}>
           <div style={{ background: t.colors.surfaceAlt, borderRadius: t.radius.card, border: `0.5px solid ${t.colors.border}`, overflow: 'hidden' }}>
             {store.levels.map((l, i) => {
@@ -2555,8 +2555,7 @@ function App() {
           flex: 1, display: 'flex', flexDirection: 'column',
           position: 'relative', minHeight: 0,
         }}>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', minHeight: 0,
-                       ...(IS_MOBILE && !isModal && { paddingBottom: 'calc(56px + env(safe-area-inset-bottom))' }) }}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', minHeight: 0 }}
                key={stack.length + '-' + top.screen}>
             {renderScreen()}
           </div>
