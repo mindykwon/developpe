@@ -975,7 +975,7 @@ function NewClassScreen({ store, nav, params }) {
 
   const studioTeachers = studioId ? store.teachers.filter(tc => tc.studioId === studioId) : store.teachers;
   const studioLevels = studioId ? store.levels.filter(l => l.studioId === studioId) : store.levels;
-  const showLevelRow = studioLevels.length > 1;
+  const showLevelRow = studioLevels.length > 0;
 
   const studioInitialized = useRef(false);
   useEffect(() => {
