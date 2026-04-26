@@ -556,13 +556,15 @@ function TabBar({ current, onChange, action }) {
   return (
     <div style={{
       flexShrink: 0, borderTop: `0.5px solid ${t.colors.border}`,
-      background: 'rgba(253,246,243,0.88)',
+      background: 'rgba(253,246,243,0.92)',
       backdropFilter: 'blur(20px) saturate(180%)',
       WebkitBackdropFilter: 'blur(20px) saturate(180%)',
       paddingTop: 6, paddingLeft: 0, paddingRight: 0,
       paddingBottom: IS_MOBILE ? 'max(20px, env(safe-area-inset-bottom))' : 22,
       display: 'flex', alignItems: 'flex-start',
-      position: 'relative',
+      ...(IS_MOBILE && {
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
+      }),
     }}>
       {left.map(renderTab)}
       {action && (
@@ -1714,39 +1716,39 @@ function MovementsScreen({ store, nav }) {
       <ScreenHeader
         title="동작"
         subtitle={editMode ? '이름 수정 · 순서 변경' : '기록된 피드백을 동작별로'}
-        rightAction={
+      />
+      <div style={{ padding: `4px ${t.space.screen}px 14px` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ flex: 1, display: 'flex', background: t.colors.surface, borderRadius: 10, padding: 3 }}>
+            {[
+              { key: 'barre',  label: 'Barre',  sub: '바' },
+              { key: 'center', label: 'Center', sub: '센터' },
+              { key: 'misc',   label: 'Misc',   sub: '기타' },
+            ].map(c => (
+              <button key={c.key} onClick={() => setCat(c.key)} style={{
+                flex: 1, padding: '7px 4px', borderRadius: 8, border: 'none',
+                background: cat === c.key ? t.colors.surfaceAlt : 'transparent',
+                color: cat === c.key ? t.colors.primaryDeep : t.colors.textSecondary,
+                fontFamily: t.font.sans, fontSize: 13, fontWeight: 600,
+                cursor: 'pointer', letterSpacing: -0.1,
+                boxShadow: cat === c.key ? '0 1px 3px rgba(43,31,38,0.08)' : 'none',
+                whiteSpace: 'nowrap', minWidth: 0,
+              }}>
+                {c.label} <span style={{ fontWeight: 400, fontSize: 11, opacity: 0.7 }}>· {c.sub}</span>
+              </button>
+            ))}
+          </div>
           <button onClick={() => setEditMode(e => !e)} style={{
             background: editMode ? t.colors.primaryDeep : 'transparent',
             color: editMode ? '#fff' : t.colors.primaryDeep,
             border: editMode ? 'none' : `1px solid ${t.colors.primary}`,
             borderRadius: 8, padding: '0 12px', cursor: 'pointer',
             fontFamily: t.font.sans, fontSize: 13, fontWeight: 600,
-            height: 30, display: 'inline-flex', alignItems: 'center',
-            WebkitAppearance: 'none', appearance: 'none',
+            height: 36, display: 'inline-flex', alignItems: 'center',
+            flexShrink: 0, WebkitAppearance: 'none', appearance: 'none',
           }}>
             {editMode ? '완료' : '편집'}
           </button>
-        }
-      />
-      <div style={{ padding: `4px ${t.space.screen}px 14px` }}>
-        <div style={{ display: 'flex', background: t.colors.surface, borderRadius: 10, padding: 3 }}>
-          {[
-            { key: 'barre',  label: 'Barre',  sub: '바' },
-            { key: 'center', label: 'Center', sub: '센터' },
-            { key: 'misc',   label: 'Misc',   sub: '기타' },
-          ].map(c => (
-            <button key={c.key} onClick={() => setCat(c.key)} style={{
-              flex: 1, padding: '7px 4px', borderRadius: 8, border: 'none',
-              background: cat === c.key ? t.colors.surfaceAlt : 'transparent',
-              color: cat === c.key ? t.colors.primaryDeep : t.colors.textSecondary,
-              fontFamily: t.font.sans, fontSize: 13, fontWeight: 600,
-              cursor: 'pointer', letterSpacing: -0.1,
-              boxShadow: cat === c.key ? '0 1px 3px rgba(43,31,38,0.08)' : 'none',
-              whiteSpace: 'nowrap', minWidth: 0,
-            }}>
-              {c.label} <span style={{ fontWeight: 400, fontSize: 11, opacity: 0.7 }}>· {c.sub}</span>
-            </button>
-          ))}
         </div>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 30 }}>
@@ -2553,7 +2555,8 @@ function App() {
           flex: 1, display: 'flex', flexDirection: 'column',
           position: 'relative', minHeight: 0,
         }}>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', minHeight: 0 }}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', minHeight: 0,
+                       ...(IS_MOBILE && !isModal && { paddingBottom: 'calc(56px + env(safe-area-inset-bottom))' }) }}
                key={stack.length + '-' + top.screen}>
             {renderScreen()}
           </div>
