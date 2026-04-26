@@ -2476,22 +2476,6 @@ function App() {
     nav.reset(screen);
   };
 
-  if (loading) {
-    const t = window.theme;
-    return (
-      <div className="stage">
-        <PhoneShell>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 14 }}>
-            <div style={{ fontFamily: t.font.serif, fontSize: 30, fontStyle: 'italic', color: t.colors.primaryDeep, letterSpacing: -0.5 }}>
-              Développé
-            </div>
-            <div style={{ color: t.colors.textMuted, fontSize: 13 }}>불러오는 중…</div>
-          </div>
-        </PhoneShell>
-      </div>
-    );
-  }
-
   const top = stack[stack.length - 1];
   const isModal = ['class-new', 'feedback-new'].includes(top.screen);
 
@@ -2546,6 +2530,22 @@ function App() {
 
     return () => window.removeEventListener('message', msgListener);
   }, []);
+
+  if (loading) {
+    const t = window.theme;
+    return (
+      <div className="stage">
+        <PhoneShell>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 14 }}>
+            <div style={{ fontFamily: t.font.serif, fontSize: 30, fontStyle: 'italic', color: t.colors.primaryDeep, letterSpacing: -0.5 }}>
+              Développé
+            </div>
+            <div style={{ color: t.colors.textMuted, fontSize: 13 }}>불러오는 중…</div>
+          </div>
+        </PhoneShell>
+      </div>
+    );
+  }
 
   return (
     <div className="stage" data-screen-label={`Développé · ${top.screen}`}>
