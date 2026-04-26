@@ -1763,7 +1763,7 @@ function MovementsScreen({ store, nav }) {
     <>
       <ScreenHeader
         title="동작"
-        subtitle={editMode ? '핸들 드래그로 순서 변경 · 이름 수정' : '기록된 피드백을 동작별로'}
+        subtitle={editMode ? '드래그로 순서 변경 · 이름 수정' : undefined}
       />
       <div style={{ padding: `4px ${t.space.screen}px 14px` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -2072,7 +2072,6 @@ function SettingsScreen({ store, nav }) {
   const t = window.theme;
   const rows = [
     { icon: 'studio',  label: '학원 관리',   count: store.studios.length,  screen: 'studio-manager' },
-    { icon: 'teacher', label: '선생님 관리', count: store.teachers.length, screen: 'teacher-manager' },
     { icon: 'level',   label: '레벨 관리',   count: store.levels.length,   screen: 'level-manager' },
   ];
   return (
@@ -2143,166 +2142,159 @@ function MgmtCancelBtn({ onClick }) {
   );
 }
 
-// ─── 학원 관리 ────────────────────────────────────────────────
+// ─── 학원 관리 (선생님 포함) ────────────────────────────────────
 function StudioManagerScreen({ store, nav }) {
   const t = window.theme;
-  const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ name: '', memo: '' });
-  const [deleteId, setDeleteId] = useState(null);
+  const [editStudioId, setEditStudioId] = useState(null);
+  const [studioForm, setStudioForm] = useState({ name: '', memo: '' });
+  const [deleteStudioId, setDeleteStudioId] = useState(null);
+  const [editTeacherId, setEditTeacherId] = useState(null);
+  const [teacherForm, setTeacherForm] = useState({ name: '' });
+  const [deleteTeacherId, setDeleteTeacherId] = useState(null);
 
-  const startEdit = (s) => { setDeleteId(null); setEditId(s.id); setForm({ name: s.name, memo: s.memo || '' }); };
-  const startNew  = () => { setDeleteId(null); setEditId('new'); setForm({ name: '', memo: '' }); };
-  const cancel    = () => setEditId(null);
-  const save = () => {
-    if (!form.name.trim()) return;
-    if (editId === 'new') store.createStudio({ name: form.name.trim(), memo: form.memo.trim() });
-    else store.updateStudio(editId, { name: form.name.trim(), memo: form.memo.trim() });
-    setEditId(null);
-  };
-  const tryDelete = (id) => {
-    if (deleteId === id) { store.deleteStudio(id); setDeleteId(null); }
-    else { setEditId(null); setDeleteId(id); }
+  const cancelAll = () => {
+    setEditStudioId(null); setDeleteStudioId(null);
+    setEditTeacherId(null); setDeleteTeacherId(null);
   };
 
-  const EditForm = () => (
-    <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <input autoFocus value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-        placeholder="학원 이름" style={mgmtInputStyle(t)} />
-      <input value={form.memo} onChange={e => setForm(f => ({ ...f, memo: e.target.value }))}
-        placeholder="지역 메모 (예: 강남)" style={{ ...mgmtInputStyle(t), fontSize: 13, color: t.colors.textSecondary }} />
-      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-        <MgmtCancelBtn onClick={cancel} /><MgmtSaveBtn onClick={save} />
-      </div>
-    </div>
-  );
+  const startEditStudio = (s) => { cancelAll(); setEditStudioId(s.id); setStudioForm({ name: s.name, memo: s.memo || '' }); };
+  const startNewStudio  = () => { cancelAll(); setEditStudioId('new'); setStudioForm({ name: '', memo: '' }); };
+  const saveStudio = () => {
+    if (!studioForm.name.trim()) return;
+    if (editStudioId === 'new') store.createStudio({ name: studioForm.name.trim(), memo: studioForm.memo.trim() });
+    else store.updateStudio(editStudioId, { name: studioForm.name.trim(), memo: studioForm.memo.trim() });
+    setEditStudioId(null);
+  };
+  const tryDeleteStudio = (id) => {
+    if (deleteStudioId === id) { store.deleteStudio(id); setDeleteStudioId(null); }
+    else { cancelAll(); setDeleteStudioId(id); }
+  };
+
+  const startEditTeacher = (tc) => { cancelAll(); setEditTeacherId(tc.id); setTeacherForm({ name: tc.name }); };
+  const startNewTeacher  = (studioId) => { cancelAll(); setEditTeacherId(`new-${studioId}`); setTeacherForm({ name: '' }); };
+  const saveTeacher = (studioId) => {
+    if (!teacherForm.name.trim()) return;
+    if (typeof editTeacherId === 'string' && editTeacherId.startsWith('new-'))
+      store.createTeacher({ name: teacherForm.name.trim(), studioId });
+    else store.updateTeacher(editTeacherId, { name: teacherForm.name.trim() });
+    setEditTeacherId(null);
+  };
+  const tryDeleteTeacher = (id) => {
+    if (deleteTeacherId === id) { store.deleteTeacher(id); setDeleteTeacherId(null); }
+    else { cancelAll(); setDeleteTeacherId(id); }
+  };
 
   return (
     <>
       <ScreenHeader title="학원 관리" onBack={() => nav.back()} />
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 24 }}>
-        <div style={{ padding: `8px ${t.space.screen}px 0` }}>
-          <div style={{ background: t.colors.surfaceAlt, borderRadius: t.radius.card, border: `0.5px solid ${t.colors.border}`, overflow: 'hidden' }}>
-            {store.studios.map((s, i) => {
-              const isLast = i === store.studios.length - 1 && editId !== 'new';
-              return (
-                <div key={s.id} style={{ borderBottom: isLast ? 'none' : `0.5px solid ${t.colors.border}` }}>
-                  {editId === s.id ? <EditForm /> : (
-                    <div style={{ padding: '14px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 15, fontWeight: 500, color: t.colors.textPrimary }}>{s.name}</div>
-                        {s.memo && <div style={{ fontSize: 12, color: t.colors.textMuted, marginTop: 2 }}>{s.memo}</div>}
-                      </div>
-                      {deleteId === s.id ? (
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                          <MgmtCancelBtn onClick={() => setDeleteId(null)} />
-                          <button onClick={() => tryDelete(s.id)} style={{ background: t.colors.danger, color: '#fff', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontFamily: t.font.sans, fontSize: 13, fontWeight: 600 }}>삭제</button>
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', gap: 4 }}>
-                          <button onClick={() => startEdit(s)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, color: t.colors.textMuted }}><Icon name="edit" size={16} /></button>
-                          <button onClick={() => tryDelete(s.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, color: t.colors.textMuted }}><Icon name="trash" size={16} /></button>
-                        </div>
-                      )}
+        <div style={{ padding: `8px ${t.space.screen}px 0`, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {store.studios.map(s => {
+            const studioTeachers = store.teachers.filter(tc => tc.studioId === s.id);
+            const isEditingStudio = editStudioId === s.id;
+            const isDeletingStudio = deleteStudioId === s.id;
+            const isAddingTeacher = editTeacherId === `new-${s.id}`;
+            return (
+              <div key={s.id} style={{ background: t.colors.surfaceAlt, borderRadius: t.radius.card, border: `0.5px solid ${t.colors.border}`, overflow: 'hidden' }}>
+                {isEditingStudio ? (
+                  <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <input autoFocus value={studioForm.name} onChange={e => setStudioForm(f => ({ ...f, name: e.target.value }))}
+                      placeholder="학원 이름" style={mgmtInputStyle(t)} />
+                    <input value={studioForm.memo} onChange={e => setStudioForm(f => ({ ...f, memo: e.target.value }))}
+                      placeholder="지역 메모 (예: 강남)" style={{ ...mgmtInputStyle(t), fontSize: 13, color: t.colors.textSecondary }} />
+                    <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                      <MgmtCancelBtn onClick={() => setEditStudioId(null)} /><MgmtSaveBtn onClick={saveStudio} />
                     </div>
-                  )}
-                </div>
-              );
-            })}
-            {editId === 'new' && (
-              <div style={{ borderTop: store.studios.length ? `0.5px solid ${t.colors.border}` : 'none' }}>
-                <EditForm />
+                  </div>
+                ) : (
+                  <div style={{ padding: '14px 14px', display: 'flex', alignItems: 'center', gap: 10, borderBottom: `0.5px solid ${t.colors.border}` }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: t.colors.textPrimary }}>{s.name}</div>
+                      {s.memo && <div style={{ fontSize: 12, color: t.colors.textMuted, marginTop: 2 }}>{s.memo}</div>}
+                    </div>
+                    {isDeletingStudio ? (
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <MgmtCancelBtn onClick={() => setDeleteStudioId(null)} />
+                        <button onClick={() => tryDeleteStudio(s.id)} style={{ background: t.colors.danger, color: '#fff', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontFamily: t.font.sans, fontSize: 13, fontWeight: 600 }}>삭제</button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <button onClick={() => startEditStudio(s)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, color: t.colors.textMuted }}><Icon name="edit" size={16} /></button>
+                        <button onClick={() => tryDeleteStudio(s.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, color: t.colors.textMuted }}><Icon name="trash" size={16} /></button>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {!isEditingStudio && (
+                  <>
+                    {studioTeachers.map((tc) => {
+                      const isEditingTeacher = editTeacherId === tc.id;
+                      const isDeletingTeacher = deleteTeacherId === tc.id;
+                      return (
+                        <div key={tc.id} style={{ borderBottom: `0.5px solid ${t.colors.border}` }}>
+                          {isEditingTeacher ? (
+                            <div style={{ padding: '10px 14px 10px 28px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              <input autoFocus value={teacherForm.name} onChange={e => setTeacherForm({ name: e.target.value })}
+                                placeholder="선생님 이름" style={mgmtInputStyle(t)} />
+                              <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                                <MgmtCancelBtn onClick={() => setEditTeacherId(null)} /><MgmtSaveBtn onClick={() => saveTeacher(s.id)} />
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ padding: '10px 14px 10px 28px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <div style={{ width: 4, height: 4, borderRadius: 2, background: t.colors.textMuted, flexShrink: 0 }} />
+                              <span style={{ flex: 1, fontSize: 14, color: t.colors.textSecondary }}>{tc.name}</span>
+                              {isDeletingTeacher ? (
+                                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                  <MgmtCancelBtn onClick={() => setDeleteTeacherId(null)} />
+                                  <button onClick={() => tryDeleteTeacher(tc.id)} style={{ background: t.colors.danger, color: '#fff', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontFamily: t.font.sans, fontSize: 13, fontWeight: 600 }}>삭제</button>
+                                </div>
+                              ) : (
+                                <div style={{ display: 'flex', gap: 4 }}>
+                                  <button onClick={() => startEditTeacher(tc)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, color: t.colors.textMuted }}><Icon name="edit" size={16} /></button>
+                                  <button onClick={() => tryDeleteTeacher(tc.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, color: t.colors.textMuted }}><Icon name="trash" size={16} /></button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {isAddingTeacher && (
+                      <div style={{ borderBottom: `0.5px solid ${t.colors.border}`, padding: '10px 14px 10px 28px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <input autoFocus value={teacherForm.name} onChange={e => setTeacherForm({ name: e.target.value })}
+                          placeholder="선생님 이름" style={mgmtInputStyle(t)} />
+                        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                          <MgmtCancelBtn onClick={() => setEditTeacherId(null)} /><MgmtSaveBtn onClick={() => saveTeacher(s.id)} />
+                        </div>
+                      </div>
+                    )}
+                    {!isAddingTeacher && (
+                      <div style={{ padding: '8px 14px 8px 28px' }}>
+                        <button onClick={() => startNewTeacher(s.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: t.colors.primaryDeep, fontFamily: t.font.sans, fontSize: 13, padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <Icon name="plus" size={13} color={t.colors.primaryDeep} /> 선생님 추가
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
-            )}
-          </div>
-          {editId !== 'new' && (
-            <button onClick={startNew} style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', cursor: 'pointer', color: t.colors.primaryDeep, fontFamily: t.font.sans, fontSize: 15, fontWeight: 500, padding: '8px 4px' }}>
-              <Icon name="plus" size={16} color={t.colors.primaryDeep} /> 학원 추가
-            </button>
+            );
+          })}
+          {editStudioId === 'new' && (
+            <div style={{ background: t.colors.surfaceAlt, borderRadius: t.radius.card, border: `0.5px solid ${t.colors.border}`, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <input autoFocus value={studioForm.name} onChange={e => setStudioForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="학원 이름" style={mgmtInputStyle(t)} />
+              <input value={studioForm.memo} onChange={e => setStudioForm(f => ({ ...f, memo: e.target.value }))}
+                placeholder="지역 메모 (예: 강남)" style={{ ...mgmtInputStyle(t), fontSize: 13, color: t.colors.textSecondary }} />
+              <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                <MgmtCancelBtn onClick={() => setEditStudioId(null)} /><MgmtSaveBtn onClick={saveStudio} />
+              </div>
+            </div>
           )}
-        </div>
-      </div>
-    </>
-  );
-}
-
-// ─── 선생님 관리 ──────────────────────────────────────────────
-function TeacherManagerScreen({ store, nav }) {
-  const t = window.theme;
-  const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ name: '', studioId: null });
-  const [deleteId, setDeleteId] = useState(null);
-
-  const startEdit = (tc) => { setDeleteId(null); setEditId(tc.id); setForm({ name: tc.name, studioId: tc.studioId }); };
-  const startNew  = () => { setDeleteId(null); setEditId('new'); setForm({ name: '', studioId: null }); };
-  const cancel    = () => setEditId(null);
-  const save = () => {
-    if (!form.name.trim()) return;
-    if (editId === 'new') store.createTeacher({ name: form.name.trim(), studioId: form.studioId });
-    else store.updateTeacher(editId, { name: form.name.trim(), studioId: form.studioId });
-    setEditId(null);
-  };
-  const tryDelete = (id) => {
-    if (deleteId === id) { store.deleteTeacher(id); setDeleteId(null); }
-    else { setEditId(null); setDeleteId(id); }
-  };
-
-  const EditForm = () => (
-    <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <input autoFocus value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-        placeholder="선생님 이름" style={mgmtInputStyle(t)} />
-      <select value={form.studioId ?? ''} onChange={e => setForm(f => ({ ...f, studioId: e.target.value ? Number(e.target.value) : null }))}
-        style={{ ...mgmtInputStyle(t), fontSize: 13, color: form.studioId ? t.colors.textPrimary : t.colors.textMuted }}>
-        <option value="">학원 선택 (선택사항)</option>
-        {store.studios.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-      </select>
-      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-        <MgmtCancelBtn onClick={cancel} /><MgmtSaveBtn onClick={save} />
-      </div>
-    </div>
-  );
-
-  return (
-    <>
-      <ScreenHeader title="선생님 관리" onBack={() => nav.back()} />
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 24 }}>
-        <div style={{ padding: `8px ${t.space.screen}px 0` }}>
-          <div style={{ background: t.colors.surfaceAlt, borderRadius: t.radius.card, border: `0.5px solid ${t.colors.border}`, overflow: 'hidden' }}>
-            {store.teachers.map((tc, i) => {
-              const studio = store.studios.find(s => s.id === tc.studioId);
-              const isLast = i === store.teachers.length - 1 && editId !== 'new';
-              return (
-                <div key={tc.id} style={{ borderBottom: isLast ? 'none' : `0.5px solid ${t.colors.border}` }}>
-                  {editId === tc.id ? <EditForm /> : (
-                    <div style={{ padding: '14px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 15, fontWeight: 500, color: t.colors.textPrimary }}>{tc.name}</div>
-                        {studio && <div style={{ fontSize: 12, color: t.colors.textMuted, marginTop: 2 }}>{studio.name}</div>}
-                      </div>
-                      {deleteId === tc.id ? (
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                          <MgmtCancelBtn onClick={() => setDeleteId(null)} />
-                          <button onClick={() => tryDelete(tc.id)} style={{ background: t.colors.danger, color: '#fff', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontFamily: t.font.sans, fontSize: 13, fontWeight: 600 }}>삭제</button>
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', gap: 4 }}>
-                          <button onClick={() => startEdit(tc)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, color: t.colors.textMuted }}><Icon name="edit" size={16} /></button>
-                          <button onClick={() => tryDelete(tc.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, color: t.colors.textMuted }}><Icon name="trash" size={16} /></button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            {editId === 'new' && (
-              <div style={{ borderTop: store.teachers.length ? `0.5px solid ${t.colors.border}` : 'none' }}>
-                <EditForm />
-              </div>
-            )}
-          </div>
-          {editId !== 'new' && (
-            <button onClick={startNew} style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', cursor: 'pointer', color: t.colors.primaryDeep, fontFamily: t.font.sans, fontSize: 15, fontWeight: 500, padding: '8px 4px' }}>
-              <Icon name="plus" size={16} color={t.colors.primaryDeep} /> 선생님 추가
+          {editStudioId !== 'new' && (
+            <button onClick={startNewStudio} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', cursor: 'pointer', color: t.colors.primaryDeep, fontFamily: t.font.sans, fontSize: 15, fontWeight: 500, padding: '8px 4px' }}>
+              <Icon name="plus" size={16} color={t.colors.primaryDeep} /> 학원 추가
             </button>
           )}
         </div>
@@ -2392,7 +2384,7 @@ function LevelManagerScreen({ store, nav }) {
 Object.assign(window, {
   HomeScreen, NewClassScreen, ClassDetailScreen,
   FeedbackNewScreen, MovementsScreen, MovementDetailScreen,
-  SettingsScreen, StudioManagerScreen, TeacherManagerScreen, LevelManagerScreen,
+  SettingsScreen, StudioManagerScreen, LevelManagerScreen,
   ClassCard, FeedbackItem,
 });
 </script>
@@ -2564,7 +2556,6 @@ function App() {
       case 'movement-detail':   return <MovementDetailScreen {...props} />;
       case 'settings':          return <SettingsScreen {...props} />;
       case 'studio-manager':    return <StudioManagerScreen {...props} />;
-      case 'teacher-manager':   return <TeacherManagerScreen {...props} />;
       case 'level-manager':     return <LevelManagerScreen {...props} />;
       default:                  return <HomeScreen {...props} />;
     }
@@ -2634,7 +2625,7 @@ function App() {
             {renderScreen()}
           </div>
           {!isModal && <TabBar current={tab} onChange={onTab} />}
-          {tab === 'home' && !isModal && (
+          {top.screen === 'home' && (
             <FAB icon="plus" label="수업 기록" onClick={() => nav.push('class-new')} />
           )}
         </div>
