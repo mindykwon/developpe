@@ -107,6 +107,13 @@
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+  window.sb = supabase.createClient(
+    'https://kmxdvhlxhydbztvtgffp.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtteGR2aGx4aHlkYnp0dnRnZmZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxODA0OTQsImV4cCI6MjA5Mjc1NjQ5NH0.EsOoxEiXWfucpKaCAcCOjKFtRg7RCaCEzA_BVvobR_s'
+  );
+</script>
 
 <!-- ─── theme.jsx ─────────────────────────────────────────────── -->
 <script type="text/babel">
@@ -2321,39 +2328,77 @@ Object.assign(window, {
 
 <!-- ─── App ──────────────────────────────────────────────────── -->
 <script type="text/babel">
-const { useState: _useState, useEffect: _useEffect } = React;
+const { useState: _useState, useEffect: _useEffect, useRef: _useRef } = React;
 
 function App() {
   const [stack, setStack] = _useState([{ screen: 'home', params: {} }]);
   const [tab, setTab] = _useState('home');
+  const [loading, setLoading] = _useState(true);
 
-  const [sessions, setSessions] = _useState(() => {
-    try { const s = localStorage.getItem('app-sessions'); if (s) return JSON.parse(s); } catch(e) {}
-    return window.SEED_SESSIONS;
-  });
-  const [feedback, setFeedback] = _useState(() => {
-    try { const s = localStorage.getItem('app-feedback'); if (s) return JSON.parse(s); } catch(e) {}
-    return window.SEED_FEEDBACK;
-  });
-  const [studios, setStudios] = _useState(() => {
-    try { const s = localStorage.getItem('app-studios'); if (s) return JSON.parse(s); } catch(e) {}
-    return window.SEED_STUDIOS;
-  });
-  const [teachers, setTeachers] = _useState(() => {
-    try { const s = localStorage.getItem('app-teachers'); if (s) return JSON.parse(s); } catch(e) {}
-    return window.SEED_TEACHERS;
-  });
-  const [levels, setLevels] = _useState(() => {
-    try { const s = localStorage.getItem('app-levels'); if (s) return JSON.parse(s); } catch(e) {}
-    return window.SEED_LEVELS;
-  });
-  const [movements, setMovements] = _useState(() => {
-    try { const s = localStorage.getItem('app-movements'); if (s) return JSON.parse(s); } catch(e) {}
-    return window.MOVEMENTS;
-  });
+  const [sessions, setSessions] = _useState(window.SEED_SESSIONS);
+  const [feedback, setFeedback] = _useState(window.SEED_FEEDBACK);
+  const [studios, setStudios] = _useState(window.SEED_STUDIOS);
+  const [teachers, setTeachers] = _useState(window.SEED_TEACHERS);
+  const [levels, setLevels] = _useState(window.SEED_LEVELS);
+  const [movements, setMovements] = _useState(window.MOVEMENTS);
 
   // window.MOVEMENTS를 항상 최신 상태로 유지 (기존 컴포넌트 호환)
   window.MOVEMENTS = movements;
+
+  // Supabase 초기화 완료 여부 (초기 로드 중엔 upsert 막기)
+  const initialized = _useRef(false);
+
+  // 앱 시작 시 Supabase에서 데이터 로드
+  _useEffect(() => {
+    const sb = window.sb;
+    if (!sb) { initialized.current = true; setLoading(false); return; }
+    sb.from('app_data').select('*').then(({ data, error }) => {
+      if (!error && data && data.length > 0) {
+        const map = {};
+        data.forEach(row => { map[row.key] = row.value; });
+        if (map.sessions)  setSessions(map.sessions);
+        if (map.feedback)  setFeedback(map.feedback);
+        if (map.studios)   setStudios(map.studios);
+        if (map.teachers)  setTeachers(map.teachers);
+        if (map.levels)    setLevels(map.levels);
+        if (map.movements) setMovements(map.movements);
+      }
+      initialized.current = true;
+      setLoading(false);
+    });
+  }, []);
+
+  // 데이터 변경 시 Supabase에 저장
+  _useEffect(() => {
+    if (!window.sb || !initialized.current) return;
+    window.sb.from('app_data').upsert({ key: 'sessions', value: sessions, updated_at: new Date().toISOString() })
+      .then(({ error }) => { if (error) console.warn('Supabase:', error.message); });
+  }, [sessions]);
+  _useEffect(() => {
+    if (!window.sb || !initialized.current) return;
+    window.sb.from('app_data').upsert({ key: 'feedback', value: feedback, updated_at: new Date().toISOString() })
+      .then(({ error }) => { if (error) console.warn('Supabase:', error.message); });
+  }, [feedback]);
+  _useEffect(() => {
+    if (!window.sb || !initialized.current) return;
+    window.sb.from('app_data').upsert({ key: 'studios', value: studios, updated_at: new Date().toISOString() })
+      .then(({ error }) => { if (error) console.warn('Supabase:', error.message); });
+  }, [studios]);
+  _useEffect(() => {
+    if (!window.sb || !initialized.current) return;
+    window.sb.from('app_data').upsert({ key: 'teachers', value: teachers, updated_at: new Date().toISOString() })
+      .then(({ error }) => { if (error) console.warn('Supabase:', error.message); });
+  }, [teachers]);
+  _useEffect(() => {
+    if (!window.sb || !initialized.current) return;
+    window.sb.from('app_data').upsert({ key: 'levels', value: levels, updated_at: new Date().toISOString() })
+      .then(({ error }) => { if (error) console.warn('Supabase:', error.message); });
+  }, [levels]);
+  _useEffect(() => {
+    if (!window.sb || !initialized.current) return;
+    window.sb.from('app_data').upsert({ key: 'movements', value: movements, updated_at: new Date().toISOString() })
+      .then(({ error }) => { if (error) console.warn('Supabase:', error.message); });
+  }, [movements]);
 
   const store = {
     sessions, feedback, studios, teachers, levels, movements,
@@ -2431,27 +2476,21 @@ function App() {
     nav.reset(screen);
   };
 
-  _useEffect(() => {
-    try {
-      const saved = localStorage.getItem('dev-stack');
-      if (saved) { const s = JSON.parse(saved); if (Array.isArray(s) && s.length) setStack(s); }
-      const savedTab = localStorage.getItem('dev-tab');
-      if (savedTab) setTab(savedTab);
-    } catch(e){}
-  }, []);
-  _useEffect(() => {
-    try {
-      localStorage.setItem('dev-stack', JSON.stringify(stack));
-      localStorage.setItem('dev-tab', tab);
-    } catch(e){}
-  }, [stack, tab]);
-
-  _useEffect(() => { try { localStorage.setItem('app-sessions', JSON.stringify(sessions)); } catch(e){} }, [sessions]);
-  _useEffect(() => { try { localStorage.setItem('app-feedback', JSON.stringify(feedback)); } catch(e){} }, [feedback]);
-  _useEffect(() => { try { localStorage.setItem('app-studios', JSON.stringify(studios)); } catch(e){} }, [studios]);
-  _useEffect(() => { try { localStorage.setItem('app-teachers', JSON.stringify(teachers)); } catch(e){} }, [teachers]);
-  _useEffect(() => { try { localStorage.setItem('app-levels', JSON.stringify(levels)); } catch(e){} }, [levels]);
-  _useEffect(() => { try { localStorage.setItem('app-movements', JSON.stringify(movements)); } catch(e){} }, [movements]);
+  if (loading) {
+    const t = window.theme;
+    return (
+      <div className="stage">
+        <PhoneShell>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 14 }}>
+            <div style={{ fontFamily: t.font.serif, fontSize: 30, fontStyle: 'italic', color: t.colors.primaryDeep, letterSpacing: -0.5 }}>
+              Développé
+            </div>
+            <div style={{ color: t.colors.textMuted, fontSize: 13 }}>불러오는 중…</div>
+          </div>
+        </PhoneShell>
+      </div>
+    );
+  }
 
   const top = stack[stack.length - 1];
   const isModal = ['class-new', 'feedback-new'].includes(top.screen);
