@@ -2252,6 +2252,10 @@ function StudioManagerScreen({ store, nav }) {
                 )}
                 {!isEditingStudio && (
                   <>
+                    {/* 선생님 섹션 */}
+                    <div style={{ padding: '6px 14px', borderBottom: `0.5px solid ${t.colors.border}`, background: t.colors.surface }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase', color: t.colors.textMuted }}>선생님</span>
+                    </div>
                     {studioTeachers.map((tc) => {
                       const isEditingTeacher = editTeacherId === tc.id;
                       const isDeletingTeacher = deleteTeacherId === tc.id;
