@@ -973,6 +973,22 @@ function NewClassScreen({ store, nav, params }) {
   const [notes, setNotes] = useState(editing?.notes && typeof editing.notes === 'object' ? editing.notes : {});
   const [section, setSection] = useState('barre');
 
+  const studioTeachers = studioId ? store.teachers.filter(tc => tc.studioId === studioId) : store.teachers;
+  const showTeacherRow = !studioId || studioTeachers.length > 1;
+  const showLevelRow = store.levels.length > 1;
+
+  const studioInitialized = useRef(false);
+  useEffect(() => {
+    if (!studioInitialized.current) { studioInitialized.current = true; return; }
+    const filtered = store.teachers.filter(tc => tc.studioId === studioId);
+    if (filtered.length === 1) setTeacherId(filtered[0].id);
+    else if (!filtered.find(tc => tc.id === teacherId)) setTeacherId(null);
+  }, [studioId]);
+
+  useEffect(() => {
+    if (store.levels.length === 1 && !levelId) setLevelId(store.levels[0].id);
+  }, []);
+
   const save = () => {
     if (editing) {
       store.updateSession(editing.id, { date, studioId, teacherId, levelId, notes });
@@ -1011,29 +1027,31 @@ function NewClassScreen({ store, nav, params }) {
             <FormRow label="날짜" icon="calendar">
               <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputStyle(t)} />
             </FormRow>
-            <FormRow label="학원" icon="studio">
+            <FormRow label="학원" icon="studio" last={!showTeacherRow && !showLevelRow}>
               <SelectOrCreate
                 options={store.studios.map(s => ({ value: s.id, label: s.name }))}
                 value={studioId} onChange={setStudioId}
                 placeholder="선택 또는 추가"
               />
             </FormRow>
-            <FormRow label="선생님" icon="teacher">
-              <SelectOrCreate
-                options={store.teachers
-                  .sort((a, b) => (a.studioId === studioId ? -1 : 1))
-                  .map(x => ({ value: x.id, label: x.name, sub: store.studios.find(s => s.id === x.studioId)?.name }))}
-                value={teacherId} onChange={setTeacherId}
-                placeholder="선택 또는 추가"
-              />
-            </FormRow>
-            <FormRow label="레벨" icon="level" last>
-              <SelectOrCreate
-                options={store.levels.map(l => ({ value: l.id, label: l.name }))}
-                value={levelId} onChange={setLevelId}
-                placeholder="선택"
-              />
-            </FormRow>
+            {showTeacherRow && (
+              <FormRow label="선생님" icon="teacher" last={!showLevelRow}>
+                <SelectOrCreate
+                  options={studioTeachers.map(x => ({ value: x.id, label: x.name, sub: !studioId ? store.studios.find(s => s.id === x.studioId)?.name : undefined }))}
+                  value={teacherId} onChange={setTeacherId}
+                  placeholder="선택 또는 추가"
+                />
+              </FormRow>
+            )}
+            {showLevelRow && (
+              <FormRow label="레벨" icon="level" last>
+                <SelectOrCreate
+                  options={store.levels.map(l => ({ value: l.id, label: l.name }))}
+                  value={levelId} onChange={setLevelId}
+                  placeholder="선택"
+                />
+              </FormRow>
+            )}
           </FormCard>
           <div style={{ height: 16 }} />
           <FlowTabs section={section} onChange={setSection} />
@@ -2070,38 +2088,103 @@ function MovementDetailScreen({ store, nav, params }) {
 // ═════════ S7. Settings ═══════════════════════════════════════
 function SettingsScreen({ store, nav }) {
   const t = window.theme;
-  const rows = [
-    { icon: 'studio',  label: '학원 관리',   count: store.studios.length,  screen: 'studio-manager' },
-    { icon: 'level',   label: '레벨 관리',   count: store.levels.length,   screen: 'level-manager' },
-  ];
+  const [editLevelId, setEditLevelId] = useState(null);
+  const [levelForm, setLevelForm] = useState({ name: '' });
+  const [deleteLevelId, setDeleteLevelId] = useState(null);
+
+  const startEditLevel = (l) => { setDeleteLevelId(null); setEditLevelId(l.id); setLevelForm({ name: l.name }); };
+  const startNewLevel  = () => { setDeleteLevelId(null); setEditLevelId('new'); setLevelForm({ name: '' }); };
+  const saveLevel = () => {
+    if (!levelForm.name.trim()) return;
+    if (editLevelId === 'new') store.createLevel({ name: levelForm.name.trim(), order: store.levels.length + 1 });
+    else store.updateLevel(editLevelId, { name: levelForm.name.trim() });
+    setEditLevelId(null);
+  };
+  const tryDeleteLevel = (id) => {
+    if (deleteLevelId === id) { store.deleteLevel(id); setDeleteLevelId(null); }
+    else { setEditLevelId(null); setDeleteLevelId(id); }
+  };
+
   return (
     <>
       <ScreenHeader title="설정" />
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 24 }}>
         <div style={{ padding: `8px ${t.space.screen}px 0` }}>
-          <div style={{
-            background: t.colors.surfaceAlt, borderRadius: t.radius.card,
-            border: `0.5px solid ${t.colors.border}`, overflow: 'hidden',
-          }}>
-            {rows.map((r, i) => (
-              <button key={r.label} onClick={() => nav.push(r.screen)} style={{
-                width: '100%', textAlign: 'left', background: 'transparent', border: 'none',
-                cursor: 'pointer', padding: '14px 16px',
-                borderBottom: i < rows.length - 1 ? `0.5px solid ${t.colors.border}` : 'none',
-                display: 'flex', alignItems: 'center', gap: 12, fontFamily: t.font.sans,
-              }}>
-                <div style={{
-                  width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-                  background: t.colors.surface,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <Icon name={r.icon} size={17} color={t.colors.primaryDeep} />
+          {/* 학원 관리 */}
+          <div style={{ background: t.colors.surfaceAlt, borderRadius: t.radius.card, border: `0.5px solid ${t.colors.border}`, overflow: 'hidden' }}>
+            <button onClick={() => nav.push('studio-manager')} style={{
+              width: '100%', textAlign: 'left', background: 'transparent', border: 'none',
+              cursor: 'pointer', padding: '14px 16px',
+              display: 'flex', alignItems: 'center', gap: 12, fontFamily: t.font.sans,
+            }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: t.colors.surface, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name="studio" size={17} color={t.colors.primaryDeep} />
+              </div>
+              <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: t.colors.textPrimary }}>학원 관리</span>
+              <span style={{ fontSize: 13, color: t.colors.textMuted, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{store.studios.length}</span>
+              <div style={{ flexShrink: 0, display: 'flex' }}><Icon name="chevron" size={14} color={t.colors.textMuted} /></div>
+            </button>
+          </div>
+
+          {/* 레벨 (인라인) */}
+          <div style={{ marginTop: 10, background: t.colors.surfaceAlt, borderRadius: t.radius.card, border: `0.5px solid ${t.colors.border}`, overflow: 'hidden' }}>
+            <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: `0.5px solid ${t.colors.border}` }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: t.colors.surface, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name="level" size={17} color={t.colors.primaryDeep} />
+              </div>
+              <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: t.colors.textPrimary }}>레벨</span>
+            </div>
+            {store.levels.map((l) => {
+              const isEditing = editLevelId === l.id;
+              const isDeleting = deleteLevelId === l.id;
+              return (
+                <div key={l.id} style={{ borderBottom: `0.5px solid ${t.colors.border}` }}>
+                  {isEditing ? (
+                    <div style={{ padding: '10px 14px 10px 28px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <input autoFocus value={levelForm.name} onChange={e => setLevelForm({ name: e.target.value })}
+                        onKeyDown={e => e.key === 'Enter' && saveLevel()}
+                        placeholder="레벨 이름" style={mgmtInputStyle(t)} />
+                      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                        <MgmtCancelBtn onClick={() => setEditLevelId(null)} /><MgmtSaveBtn onClick={saveLevel} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ padding: '10px 14px 10px 28px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 4, height: 4, borderRadius: 2, background: t.colors.textMuted, flexShrink: 0 }} />
+                      <span style={{ flex: 1, fontSize: 14, color: t.colors.textSecondary }}>{l.name}</span>
+                      {isDeleting ? (
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                          <MgmtCancelBtn onClick={() => setDeleteLevelId(null)} />
+                          <button onClick={() => tryDeleteLevel(l.id)} style={{ background: t.colors.danger, color: '#fff', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontFamily: t.font.sans, fontSize: 13, fontWeight: 600 }}>삭제</button>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          <button onClick={() => startEditLevel(l)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, color: t.colors.textMuted }}><Icon name="edit" size={16} /></button>
+                          <button onClick={() => tryDeleteLevel(l.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, color: t.colors.textMuted }}><Icon name="trash" size={16} /></button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: t.colors.textPrimary }}>{r.label}</span>
-                <span style={{ fontSize: 13, color: t.colors.textMuted, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{r.count}</span>
-                <div style={{ flexShrink: 0, display: 'flex' }}><Icon name="chevron" size={14} color={t.colors.textMuted} /></div>
-              </button>
-            ))}
+              );
+            })}
+            {editLevelId === 'new' && (
+              <div style={{ borderBottom: `0.5px solid ${t.colors.border}`, padding: '10px 14px 10px 28px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <input autoFocus value={levelForm.name} onChange={e => setLevelForm({ name: e.target.value })}
+                  onKeyDown={e => e.key === 'Enter' && saveLevel()}
+                  placeholder="레벨 이름 (예: Intermediate)" style={mgmtInputStyle(t)} />
+                <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                  <MgmtCancelBtn onClick={() => setEditLevelId(null)} /><MgmtSaveBtn onClick={saveLevel} />
+                </div>
+              </div>
+            )}
+            {editLevelId !== 'new' && (
+              <div style={{ padding: '8px 14px 8px 28px' }}>
+                <button onClick={startNewLevel} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: t.colors.primaryDeep, fontFamily: t.font.sans, fontSize: 13, padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Icon name="plus" size={13} color={t.colors.primaryDeep} /> 레벨 추가
+                </button>
+              </div>
+            )}
           </div>
 
           <div style={{ marginTop: 28, textAlign: 'center' }}>
@@ -2304,87 +2387,10 @@ function StudioManagerScreen({ store, nav }) {
 }
 
 // ─── 레벨 관리 ────────────────────────────────────────────────
-function LevelManagerScreen({ store, nav }) {
-  const t = window.theme;
-  const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ name: '' });
-  const [deleteId, setDeleteId] = useState(null);
-
-  const startEdit = (l) => { setDeleteId(null); setEditId(l.id); setForm({ name: l.name }); };
-  const startNew  = () => { setDeleteId(null); setEditId('new'); setForm({ name: '' }); };
-  const cancel    = () => setEditId(null);
-  const save = () => {
-    if (!form.name.trim()) return;
-    if (editId === 'new') store.createLevel({ name: form.name.trim(), order: store.levels.length + 1 });
-    else store.updateLevel(editId, { name: form.name.trim() });
-    setEditId(null);
-  };
-  const tryDelete = (id) => {
-    if (deleteId === id) { store.deleteLevel(id); setDeleteId(null); }
-    else { setEditId(null); setDeleteId(id); }
-  };
-
-  const EditForm = () => (
-    <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <input autoFocus value={form.name} onChange={e => setForm({ name: e.target.value })}
-        onKeyDown={e => e.key === 'Enter' && save()}
-        placeholder="레벨 이름 (예: Intermediate)" style={mgmtInputStyle(t)} />
-      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-        <MgmtCancelBtn onClick={cancel} /><MgmtSaveBtn onClick={save} />
-      </div>
-    </div>
-  );
-
-  return (
-    <>
-      <ScreenHeader title="레벨 관리" onBack={() => nav.back()} />
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 24 }}>
-        <div style={{ padding: `8px ${t.space.screen}px 0` }}>
-          <div style={{ background: t.colors.surfaceAlt, borderRadius: t.radius.card, border: `0.5px solid ${t.colors.border}`, overflow: 'hidden' }}>
-            {store.levels.map((l, i) => {
-              const isLast = i === store.levels.length - 1 && editId !== 'new';
-              return (
-                <div key={l.id} style={{ borderBottom: isLast ? 'none' : `0.5px solid ${t.colors.border}` }}>
-                  {editId === l.id ? <EditForm /> : (
-                    <div style={{ padding: '14px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ flex: 1, fontSize: 15, fontWeight: 500, color: t.colors.textPrimary }}>{l.name}</div>
-                      {deleteId === l.id ? (
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                          <MgmtCancelBtn onClick={() => setDeleteId(null)} />
-                          <button onClick={() => tryDelete(l.id)} style={{ background: t.colors.danger, color: '#fff', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontFamily: t.font.sans, fontSize: 13, fontWeight: 600 }}>삭제</button>
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', gap: 4 }}>
-                          <button onClick={() => startEdit(l)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, color: t.colors.textMuted }}><Icon name="edit" size={16} /></button>
-                          <button onClick={() => tryDelete(l.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, color: t.colors.textMuted }}><Icon name="trash" size={16} /></button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            {editId === 'new' && (
-              <div style={{ borderTop: store.levels.length ? `0.5px solid ${t.colors.border}` : 'none' }}>
-                <EditForm />
-              </div>
-            )}
-          </div>
-          {editId !== 'new' && (
-            <button onClick={startNew} style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', cursor: 'pointer', color: t.colors.primaryDeep, fontFamily: t.font.sans, fontSize: 15, fontWeight: 500, padding: '8px 4px' }}>
-              <Icon name="plus" size={16} color={t.colors.primaryDeep} /> 레벨 추가
-            </button>
-          )}
-        </div>
-      </div>
-    </>
-  );
-}
-
 Object.assign(window, {
   HomeScreen, NewClassScreen, ClassDetailScreen,
   FeedbackNewScreen, MovementsScreen, MovementDetailScreen,
-  SettingsScreen, StudioManagerScreen, LevelManagerScreen,
+  SettingsScreen, StudioManagerScreen,
   ClassCard, FeedbackItem,
 });
 </script>
@@ -2556,7 +2562,6 @@ function App() {
       case 'movement-detail':   return <MovementDetailScreen {...props} />;
       case 'settings':          return <SettingsScreen {...props} />;
       case 'studio-manager':    return <StudioManagerScreen {...props} />;
-      case 'level-manager':     return <LevelManagerScreen {...props} />;
       default:                  return <HomeScreen {...props} />;
     }
   };
