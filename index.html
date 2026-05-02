@@ -934,10 +934,6 @@ function ClassCard({ session, store, onClick, highlight }) {
             color: t.colors.textPrimary, letterSpacing: -0.3,
             whiteSpace: 'nowrap', lineHeight: 1.1,
           }}>{formatDate(session.date, { short: true })}</span>
-          <span style={{
-            fontSize: 11, color: t.colors.textMuted, whiteSpace: 'nowrap',
-            letterSpacing: 0.2, textTransform: 'uppercase', fontWeight: 500,
-          }}>{rel}</span>
         </div>
         {count > 0 && (
           <div style={{
