@@ -1197,7 +1197,7 @@ function FlowRow({ movement: m, index: i, isLast, comments, onChange }) {
             value={draft}
             onChange={e => setDraft(e.target.value)}
             onKeyDown={e => {
-              if (e.key === 'Enter') { e.preventDefault(); commit(); }
+              if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); commit(); }
             }}
             placeholder={comments.length ? '코멘트 추가…' : '메모 입력 후 Enter'}
             style={{
