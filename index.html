@@ -966,7 +966,7 @@ function ClassCard({ session, store, onClick, highlight }) {
 function NewClassScreen({ store, nav, params }) {
   const t = window.theme;
   const editing = params?.editId ? store.sessions.find(s => s.id === params.editId) : null;
-  const [date, setDate] = useState(editing?.date || '2026-04-19');
+  const [date, setDate] = useState(editing?.date || new Date().toISOString().slice(0, 10));
   const [studioId, setStudioId] = useState(editing?.studioId ?? null);
   const [teacherId, setTeacherId] = useState(editing?.teacherId ?? null);
   const [levelId, setLevelId] = useState(editing?.levelId ?? null);
