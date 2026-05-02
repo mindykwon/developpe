@@ -1937,6 +1937,7 @@ function MovementsScreen({ store, nav }) {
 
 // ─── Keyword clustering ───────────────────────────────────────
 const KR_PARTICLES = /(은|는|이|가|을|를|에서|에게|에|의|도|만|과|와|으로|로|라고|라는|라|이라|까지|부터|보다|처럼|마다|조차|이나|나|이며|며|이고|고|지만|이지만|한테|께|께서|씨|님)$/;
+const PROTECTED_TERMS = new Set(['데리에', '드방', '앙나방', '앙들당', '앙레르', '앙바', '쥬떼', '파드부레', '파드샤', '글리사드', '엉덩이']);
 const REJECT_SUFFIX = /(하기|되기|시기|지기|기기|히|게|서|며|면서|면|다|자|구나|네|잖|해짐|됨|함|님)$/;
 const VERB_NOUNS = new Set([
   '쓰기','하기','되기','보기','가기','오기','먹기','듣기','말기','두기','놓기','쥐기','잡기',
@@ -1966,7 +1967,7 @@ function extractKeywords(s) {
   for (const tok of raw) {
     let w = tok;
     const p = w.match(KR_PARTICLES);
-    if (p && w.length - p[0].length >= 2) w = w.slice(0, w.length - p[0].length);
+    if (p && w.length - p[0].length >= 2 && !PROTECTED_TERMS.has(w)) w = w.slice(0, w.length - p[0].length);
     if (VERB_NOUNS.has(w)) continue;
     if (REJECT_SUFFIX.test(w)) continue;
     if (w.length <= 3 && w.endsWith('기')) continue;
