@@ -1979,9 +1979,9 @@ function extractKeywords(s) {
   return [...out];
 }
 
-function clusterComments(comments) {
+function clusterComments(comments, tokens) {
   if (!comments.length) return [];
-  const tokens = comments.map(extractKeywords);
+  if (!tokens) tokens = comments.map(extractKeywords);
   const df = new Map();
   tokens.forEach(toks => toks.forEach(k => df.set(k, (df.get(k) || 0) + 1)));
   const assign = comments.map((_, i) => {
@@ -2026,10 +2026,34 @@ function MovementDetailScreen({ store, nav, params }) {
         const arr = s.notes?.[params.key];
         if (Array.isArray(arr)) arr.forEach(c => out.push(c));
       });
+    store.feedback
+      .filter(f => f.movementKey === params.key && f.body)
+      .slice()
+      .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+      .forEach(f => out.push(f.body));
     return out;
-  }, [store.sessions, params.key]);
+  }, [store.sessions, store.feedback, params.key]);
 
-  const clusters = useMemo(() => clusterComments(allComments), [allComments]);
+  const [draft, setDraft] = useState('');
+  const addQuick = () => {
+    const trimmed = draft.trim();
+    if (!trimmed) return;
+    store.createFeedback({ movementKey: params.key, body: trimmed });
+    setDraft('');
+  };
+
+  const [clusters, setClusters] = useState([]);
+  useEffect(() => {
+    if (!allComments.length) { setClusters([]); return; }
+    fetch('/api/keywords', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ comments: allComments }),
+    })
+      .then(r => r.json())
+      .then(data => setClusters(clusterComments(allComments, data.keywords_per_comment)))
+      .catch(() => setClusters(clusterComments(allComments)));
+  }, [allComments]);
   const total = allComments.length;
 
   return (
@@ -2037,6 +2061,34 @@ function MovementDetailScreen({ store, nav, params }) {
       <ScreenHeader title={mv?.en || ''} subtitle={`${mv?.ko} · 누적 ${total}건`} onBack={() => nav.back()} />
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 24 }}>
         <div style={{ padding: `8px ${t.space.screen}px 0` }}>
+          <div style={{
+            marginBottom: 14, background: t.colors.surfaceAlt,
+            borderRadius: t.radius.card, border: `0.5px solid ${t.colors.border}`,
+            padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            <input
+              value={draft}
+              onChange={e => setDraft(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); addQuick(); }
+              }}
+              placeholder="이 동작에 메모 추가…"
+              style={{
+                flex: 1, border: 'none', outline: 'none',
+                fontFamily: t.font.sans, fontSize: 14,
+                color: t.colors.textPrimary, background: 'transparent',
+                padding: 0, minWidth: 0,
+              }}
+            />
+            {draft.trim() && (
+              <button onClick={addQuick} style={{
+                flexShrink: 0, border: 'none', background: t.colors.primaryDeep,
+                color: t.colors.surface, fontSize: 12, fontWeight: 600,
+                padding: '4px 10px', borderRadius: 6, cursor: 'pointer',
+                fontFamily: t.font.sans,
+              }}>추가</button>
+            )}
+          </div>
           {clusters.length === 0 ? (
             <EmptyState title="아직 기록이 없습니다" subtitle="이 동작에 대한 메모가 쌓이면 키워드별로 묶어드려요." />
           ) : (
