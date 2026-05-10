@@ -1989,31 +1989,18 @@ function MovementDetailScreen({ store, nav, params }) {
     setDraft('');
   };
 
-  const localClusters = useMemo(() => clusterComments(allComments), [allComments]);
-  const [serverClusters, setServerClusters] = useState(null);
+  const tokens = useMemo(
+    () => allComments.map(c => store.commentKeywords?.[c] ?? extractKeywords(c)),
+    [allComments, store.commentKeywords]
+  );
+  const clusters = useMemo(() => clusterComments(allComments, tokens), [allComments, tokens]);
+
+  // Backfill: 캐시에 없는 레거시 코멘트가 있으면 백그라운드에서 분석해 저장
   useEffect(() => {
-    if (!allComments.length) { setServerClusters(null); return; }
-    const cacheKey = JSON.stringify(allComments);
-    const cached = window.__keywordCache?.get(cacheKey);
-    if (cached) { setServerClusters(clusterComments(allComments, cached)); return; }
-    setServerClusters(null);
-    let cancelled = false;
-    fetch('/api/keywords', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ comments: allComments }),
-    })
-      .then(r => r.json())
-      .then(data => {
-        if (cancelled) return;
-        if (!window.__keywordCache) window.__keywordCache = new Map();
-        window.__keywordCache.set(cacheKey, data.keywords_per_comment);
-        setServerClusters(clusterComments(allComments, data.keywords_per_comment));
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [allComments]);
-  const clusters = serverClusters ?? localClusters;
+    if (!allComments.length) return;
+    const missing = allComments.filter(c => c && !store.commentKeywords?.[c]);
+    if (missing.length) store.ensureKeywords(missing);
+  }, [allComments, store.commentKeywords]);
   const total = allComments.length;
 
   return (
@@ -2420,6 +2407,7 @@ function App() {
   const [teachers, setTeachers] = _useState(window.SEED_TEACHERS);
   const [levels, setLevels] = _useState(window.SEED_LEVELS);
   const [movements, setMovements] = _useState(window.MOVEMENTS);
+  const [commentKeywords, setCommentKeywords] = _useState({});
 
   // window.MOVEMENTS를 항상 최신 상태로 유지 (기존 컴포넌트 호환)
   window.MOVEMENTS = movements;
@@ -2441,6 +2429,7 @@ function App() {
         if (map.teachers)  setTeachers(map.teachers);
         if (map.levels)    setLevels(map.levels);
         if (map.movements) setMovements(map.movements);
+        if (map.commentKeywords) setCommentKeywords(map.commentKeywords);
       }
       initialized.current = true;
       setLoading(false);
@@ -2478,16 +2467,44 @@ function App() {
     window.sb.from('app_data').upsert({ key: 'movements', value: movements, updated_at: new Date().toISOString() })
       .then(({ error }) => { if (error) console.warn('Supabase:', error.message); });
   }, [movements]);
+  _useEffect(() => {
+    if (!window.sb || !initialized.current) return;
+    window.sb.from('app_data').upsert({ key: 'commentKeywords', value: commentKeywords, updated_at: new Date().toISOString() })
+      .then(({ error }) => { if (error) console.warn('Supabase:', error.message); });
+  }, [commentKeywords]);
+
+  const ensureKeywords = (comments) => {
+    const missing = [...new Set(comments.filter(c => c && typeof c === 'string' && !commentKeywords[c]))];
+    if (!missing.length) return;
+    fetch('/api/keywords', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ comments: missing }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (!Array.isArray(data?.keywords_per_comment)) return;
+        setCommentKeywords(prev => {
+          const next = { ...prev };
+          missing.forEach((c, i) => { next[c] = data.keywords_per_comment[i] || []; });
+          return next;
+        });
+      })
+      .catch(() => {});
+  };
 
   const store = {
-    sessions, feedback, studios, teachers, levels, movements,
+    sessions, feedback, studios, teachers, levels, movements, commentKeywords,
+    ensureKeywords,
     createSession(data) {
       const id = Math.max(0, ...sessions.map(s => s.id)) + 1;
       setSessions([...sessions, { id, ...data }]);
+      if (data.notes) ensureKeywords(Object.values(data.notes).flat());
       return id;
     },
     updateSession(id, data) {
       setSessions(sessions.map(s => s.id === id ? { ...s, ...data } : s));
+      if (data.notes) ensureKeywords(Object.values(data.notes).flat());
     },
     deleteSession(id) {
       setSessions(sessions.filter(s => s.id !== id));
@@ -2496,6 +2513,7 @@ function App() {
       const id = Math.max(0, ...feedback.map(f => f.id)) + 1;
       const now = new Date().toISOString();
       setFeedback([...feedback, { id, createdAt: now, ...data }]);
+      if (data.body) ensureKeywords([data.body]);
       return id;
     },
     createStudio(data) {
