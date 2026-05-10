@@ -1989,18 +1989,31 @@ function MovementDetailScreen({ store, nav, params }) {
     setDraft('');
   };
 
-  const [clusters, setClusters] = useState([]);
+  const localClusters = useMemo(() => clusterComments(allComments), [allComments]);
+  const [serverClusters, setServerClusters] = useState(null);
   useEffect(() => {
-    if (!allComments.length) { setClusters([]); return; }
+    if (!allComments.length) { setServerClusters(null); return; }
+    const cacheKey = JSON.stringify(allComments);
+    const cached = window.__keywordCache?.get(cacheKey);
+    if (cached) { setServerClusters(clusterComments(allComments, cached)); return; }
+    setServerClusters(null);
+    let cancelled = false;
     fetch('/api/keywords', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ comments: allComments }),
     })
       .then(r => r.json())
-      .then(data => setClusters(clusterComments(allComments, data.keywords_per_comment)))
-      .catch(() => setClusters(clusterComments(allComments)));
+      .then(data => {
+        if (cancelled) return;
+        if (!window.__keywordCache) window.__keywordCache = new Map();
+        window.__keywordCache.set(cacheKey, data.keywords_per_comment);
+        setServerClusters(clusterComments(allComments, data.keywords_per_comment));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, [allComments]);
+  const clusters = serverClusters ?? localClusters;
   const total = allComments.length;
 
   return (
