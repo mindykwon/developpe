@@ -1830,7 +1830,7 @@ function MovementsScreen({ store, nav }) {
                   <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
                     <MovementName en={m.en} ko={m.ko} size={15} weight={600} />
                     <div style={{ fontSize: 12, color: t.colors.textMuted, letterSpacing: -0.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {c.count > 0 ? `${c.count}건 · 마지막 ${formatRelative(c.last)}` : '기록 없음'}
+                      {c.count > 0 ? `${c.count}건` : '기록 없음'}
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
