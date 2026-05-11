@@ -1290,7 +1290,6 @@ function ClassDetailScreen({ store, nav, params }) {
     <>
       <ScreenHeader
         title={formatDate(session.date, { short: true })}
-        subtitle={formatRelative(session.date)}
         onBack={() => nav.back()}
         rightAction={
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
